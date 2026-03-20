@@ -1,7 +1,7 @@
-import type { Metadata } from "next"
-import "./globals.css"
-import { ConvexClientProvider } from "@/providers/convex-provider"
-import { QueryProvider } from "@/providers/query-provider"
+import type { Metadata } from "next";
+import "./globals.css";
+import { ConvexClientProvider } from "@/providers/convex-provider";
+import { QueryProvider } from "@/providers/query-provider";
 
 export const metadata: Metadata = {
   title: "My App",
@@ -17,10 +17,8 @@ export default function RootLayout({
     <html lang="en">
       <body>
         <ConvexClientProvider>
-        <QueryProvider>
-        {children}
-      </QueryProvider>
-      </ConvexClientProvider>
+          <QueryProvider>{children}</QueryProvider>
+        </ConvexClientProvider>
       </body>
     </html>
   );

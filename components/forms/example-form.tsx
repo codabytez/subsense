@@ -2,7 +2,10 @@
 
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { exampleSchema, type ExampleFormValues } from "@/lib/validations/example";
+import {
+  exampleSchema,
+  type ExampleFormValues,
+} from "@/lib/validations/example";
 
 export function ExampleForm() {
   const {
@@ -13,14 +16,16 @@ export function ExampleForm() {
     resolver: zodResolver(exampleSchema),
   });
 
-  async function onSubmit(data: ExampleFormValues) {
-    console.log(data);
+  async function onSubmit(_data: ExampleFormValues) {
+    // TODO: handle form submission
   }
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
       <div className="flex flex-col gap-1">
-        <label htmlFor="name" className="text-sm font-medium">Name</label>
+        <label htmlFor="name" className="text-sm font-medium">
+          Name
+        </label>
         <input
           id="name"
           {...register("name")}
@@ -33,7 +38,9 @@ export function ExampleForm() {
       </div>
 
       <div className="flex flex-col gap-1">
-        <label htmlFor="email" className="text-sm font-medium">Email</label>
+        <label htmlFor="email" className="text-sm font-medium">
+          Email
+        </label>
         <input
           id="email"
           type="email"
