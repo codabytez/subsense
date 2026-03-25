@@ -10,7 +10,9 @@
     "prepare": "husky",
     "format": "prettier --write .",
     "check-format": "prettier --check .",
-    "check-types": "tsc --noEmit"
+    "check-types": "tsc --noEmit",
+    "convex:dev": "convex dev",
+    "convex:deploy": "convex deploy"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
