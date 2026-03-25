@@ -9,12 +9,10 @@ export default function DashboardLayout({
 }) {
   return (
     <div className="flex h-screen bg-background">
-      {/* Desktop sidebar */}
       <div className="hidden md:flex">
         <Sidebar />
       </div>
 
-      {/* Main area */}
       <div className="flex flex-col flex-1 overflow-hidden">
         <Header />
         <main className="flex-1 overflow-y-auto p-4 pb-24 md:p-8 md:pb-8">
@@ -22,7 +20,6 @@ export default function DashboardLayout({
         </main>
       </div>
 
-      {/* Mobile bottom nav */}
       <BottomNav />
     </div>
   );

@@ -26,13 +26,21 @@ const statusConfig: Record<
     badge: "bg-muted/20",
     text: "text-muted",
   },
+  cancelled: {
+    label: "CANCELLED",
+    dot: "bg-tertiary",
+    badge: "bg-tertiary/10",
+    text: "text-tertiary",
+  },
 };
 
 const cycleLabel: Record<BillingCycle, string> = {
+  weekly: "WEEKLY",
   monthly: "MONTHLY",
   annual: "ANNUAL",
   trial: "TRIAL ENDS",
   "usage-based": "USAGE-BASED",
+  custom: "CUSTOM",
 };
 
 const renewalLabelDisplay: Record<RenewalLabel, string> = {
@@ -45,9 +53,14 @@ const renewalLabelDisplay: Record<RenewalLabel, string> = {
 interface Props {
   subscription: Subscription;
   index: number;
+  view?: "grid" | "list";
 }
 
-export function SubscriptionCard({ subscription, index }: Props) {
+export function SubscriptionCard({
+  subscription,
+  index,
+  view = "grid",
+}: Props) {
   const {
     name,
     category,
@@ -63,6 +76,80 @@ export function SubscriptionCard({ subscription, index }: Props) {
   } = subscription;
 
   const s = statusConfig[status];
+
+  if (view === "list") {
+    return (
+      <motion.div
+        initial={{ opacity: 0, x: -8 }}
+        animate={{ opacity: 1, x: 0 }}
+        whileHover={{ x: 2 }}
+        whileTap={{ scale: 0.99 }}
+        transition={{ delay: index * 0.04, duration: 0.25, ease: "easeOut" }}
+      >
+        <Link
+          href={`/dashboard/subscriptions/${subscription.id}`}
+          className="bg-surface border border-border rounded-xl px-4 py-3 flex items-center gap-4 hover:border-primary/30 transition-colors"
+        >
+          {/* Icon */}
+          <div
+            className={cn(
+              "w-9 h-9 rounded-xl flex items-center justify-center text-sm font-bold text-foreground shrink-0",
+              iconBg
+            )}
+          >
+            {iconInitial}
+          </div>
+
+          {/* Name + category */}
+          <div className="flex flex-col gap-0.5 min-w-0 flex-1">
+            <span className="text-sm font-bold text-foreground leading-none truncate">
+              {name}
+            </span>
+            <span className="text-[10px] text-muted font-medium uppercase tracking-widest">
+              {category}
+            </span>
+          </div>
+
+          {/* Status badge */}
+          <span
+            className={cn(
+              "hidden sm:flex items-center gap-1 px-2 py-0.5 rounded-md text-[9px] font-bold tracking-widest shrink-0",
+              s.badge,
+              s.text
+            )}
+          >
+            <span className={cn("w-1 h-1 rounded-full", s.dot)} />
+            {s.label}
+          </span>
+
+          {/* Amount */}
+          <div className="flex flex-col items-end gap-0.5 shrink-0">
+            <span className="text-sm font-bold text-foreground font-mono">
+              {amountApprox ? "~" : ""}${amount.toFixed(2)}
+            </span>
+            <span className="text-[9px] text-muted font-semibold uppercase tracking-widest">
+              {cycleLabel[cycle]}
+            </span>
+          </div>
+
+          {/* Renewal */}
+          <div className="hidden md:flex flex-col items-end gap-0.5 shrink-0 w-24">
+            <span
+              className={cn(
+                "text-sm font-semibold",
+                renewalUrgent ? "text-tertiary" : "text-foreground"
+              )}
+            >
+              {renewalValue}
+            </span>
+            <span className="text-[9px] text-muted font-semibold uppercase tracking-widest">
+              {renewalLabelDisplay[renewalLabel]}
+            </span>
+          </div>
+        </Link>
+      </motion.div>
+    );
+  }
 
   return (
     <motion.div

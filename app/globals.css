@@ -17,6 +17,16 @@
   --color-sidebar: #13151f;
   --color-sidebar-active: #16162a;
   --color-border: #ffffff14;
+  --login-brand-gradient: radial-gradient(
+    ellipse at 20% 50%,
+    rgba(124, 92, 252, 0.12) 0%,
+    #13151f 60%
+  );
+  --login-brand-heading: #f5f5f7;
+  --login-brand-copy: rgba(245, 245, 247, 0.68);
+  --login-brand-pill-bg: rgba(255, 255, 255, 0.04);
+  --login-brand-pill-border: rgba(255, 255, 255, 0.08);
+  --login-brand-footer: rgba(245, 245, 247, 0.4);
 
   /* ================================
    * Typography
@@ -58,6 +68,18 @@
   --color-border: #0000001a;
   --color-sidebar: #ebebf5;
   --color-sidebar-active: #e0e0f0;
+  --login-brand-gradient: radial-gradient(
+    circle at 18% 48%,
+    rgba(124, 92, 252, 0.2) 0%,
+    rgba(166, 149, 255, 0.18) 16%,
+    rgba(255, 255, 255, 0.96) 46%,
+    #eef0f8 100%
+  );
+  --login-brand-heading: #141624;
+  --login-brand-copy: #666a7d;
+  --login-brand-pill-bg: rgba(255, 255, 255, 0.72);
+  --login-brand-pill-border: rgba(124, 92, 252, 0.14);
+  --login-brand-footer: rgba(20, 22, 36, 0.42);
 }
 
 @layer base {
@@ -118,5 +140,39 @@
 @layer utilities {
   button {
     cursor: pointer;
+  }
+
+  .login-brand-panel {
+    background: var(--login-brand-gradient);
+  }
+
+  .login-brand-heading {
+    color: var(--login-brand-heading);
+  }
+
+  .login-brand-copy {
+    color: var(--login-brand-copy);
+  }
+
+  .login-brand-pill {
+    background: var(--login-brand-pill-bg);
+    border-color: var(--login-brand-pill-border);
+    backdrop-filter: blur(16px);
+  }
+
+  .login-brand-footer {
+    color: var(--login-brand-footer);
+  }
+
+  .login-logo-light {
+    display: none;
+  }
+
+  [data-theme="light"] .login-logo-dark {
+    display: none;
+  }
+
+  [data-theme="light"] .login-logo-light {
+    display: block;
   }
 }

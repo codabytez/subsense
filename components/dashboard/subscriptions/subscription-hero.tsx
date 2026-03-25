@@ -17,6 +17,7 @@ interface SubscriptionHeroProps {
   iconBg: string;
   gradientColor: string;
   onConfirmPayment?: () => void;
+  onEdit?: () => void;
 }
 
 export function SubscriptionHero({
@@ -27,6 +28,7 @@ export function SubscriptionHero({
   iconBg,
   gradientColor,
   onConfirmPayment,
+  onEdit,
 }: SubscriptionHeroProps) {
   return (
     <motion.div
@@ -82,7 +84,10 @@ export function SubscriptionHero({
               Confirm Payment
             </button>
           )}
-          <button className="flex items-center gap-2 px-5 py-2.5 bg-surface border border-border rounded-xl text-sm font-semibold text-foreground hover:bg-white/5 transition-colors">
+          <button
+            onClick={onEdit}
+            className="flex items-center gap-2 px-5 py-2.5 bg-surface border border-border rounded-xl text-sm font-semibold text-foreground hover:bg-white/5 transition-colors"
+          >
             <Edit2 size={15} color="currentColor" />
             Edit
           </button>
