@@ -9,19 +9,27 @@
   --color-tertiary: #f97066;
   --color-neutral: #0a0a0f;
 
-  --color-background: #13131f;
-  --color-surface: #1e1e2e;
+  --color-background: #0e0e13;
+  --color-surface: #131319;
   --color-foreground: #f5f5f7;
   --color-muted: #a0a0af;
+
+  --color-sidebar: #13151f;
+  --color-sidebar-active: #16162a;
+  --color-border: #ffffff14;
 
   /* ================================
    * Typography
    * ================================ */
-  --font-sans: "Inter", sans-serif;
+
+  /* Font families — variables injected by next/font */
+  --font-display: var(--font-syne), sans-serif; /* Logo, display headings */
+  --font-sans: var(--font-dm-sans), sans-serif; /* UI body text */
+  --font-mono: var(--font-dm-mono), monospace; /* Numbers, amounts, code */
 
   --text-headline: 2.25rem;
   --text-headline--line-height: 1.2;
-  --text-headline--font-weight: 600;
+  --text-headline--font-weight: 700;
 
   --text-body: 1rem;
   --text-body--line-height: 1.6;
@@ -38,4 +46,77 @@
   --radius-md: 10px;
   --radius-lg: 16px;
   --radius-full: 9999px;
+}
+
+/* ── Light theme overrides (unlayered so they beat @theme) ── */
+[data-theme="light"] {
+  --color-background: #f5f5fa;
+  --color-surface: #ffffff;
+  --color-neutral: #eaeaf2;
+  --color-foreground: #111118;
+  --color-muted: #6b6b80;
+  --color-border: #0000001a;
+  --color-sidebar: #ebebf5;
+  --color-sidebar-active: #e0e0f0;
+}
+
+@layer base {
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: rgba(124, 92, 252, 0.4);
+    border-radius: 999px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(124, 92, 252, 0.7);
+  }
+
+  ::-webkit-scrollbar-corner {
+    background: transparent;
+  }
+
+  body {
+    font-family: var(--font-sans);
+    background-color: #0e0e13;
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: var(--font-display);
+  }
+
+  button,
+  input,
+  textarea,
+  select {
+    font-family: var(--font-sans);
+  }
+
+  code,
+  pre,
+  kbd,
+  samp {
+    font-family: var(--font-mono);
+  }
+}
+
+@layer utilities {
+  button {
+    cursor: pointer;
+  }
 }
