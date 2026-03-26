@@ -14,6 +14,7 @@ export const createAuth = (ctx: GenericCtx) => {
     baseURL: process.env.CONVEX_SITE_URL,
     trustedOrigins: [
       process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000",
+      "https://*.vercel.app",
     ],
     user: {
       deleteUser: {
