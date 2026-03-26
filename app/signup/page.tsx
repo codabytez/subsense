@@ -11,39 +11,43 @@ import { Eye, EyeSlash } from "iconsax-reactjs";
 import { toast } from "sonner";
 import { Button, Input } from "@/components/ui";
 import { cn } from "@/lib/utils";
-import { signIn } from "@/lib/auth-client";
-import { loginSchema, type LoginFormValues } from "@/lib/validations/auth";
+import { signUp } from "@/lib/auth-client";
+import { signupSchema, type SignupFormValues } from "@/lib/validations/auth";
 
-export default function LoginPage() {
+export default function SignupPage() {
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
 
   const {
     register,
     handleSubmit,
     formState: { errors, isSubmitting, isValid },
-  } = useForm<LoginFormValues>({
-    resolver: zodResolver(loginSchema),
+  } = useForm<SignupFormValues>({
+    resolver: zodResolver(signupSchema),
     mode: "onChange",
     defaultValues: {
+      name: "",
       email: "",
       password: "",
+      confirmPassword: "",
     },
   });
 
-  async function onSubmit(values: LoginFormValues) {
-    const { error } = await signIn.email({
+  async function onSubmit(values: SignupFormValues) {
+    const { error } = await signUp.email({
+      name: values.name,
       email: values.email,
       password: values.password,
-      callbackURL: "/dashboard",
+      callbackURL: `${window.location.origin}/dashboard`,
     });
 
     if (error) {
-      toast.error(error.message ?? "Sign in failed. Please try again.");
+      toast.error(error.message ?? "Sign up failed. Please try again.");
       return;
     }
 
-    router.push("/dashboard");
+    router.push(`/verify-email?email=${encodeURIComponent(values.email)}`);
   }
 
   return (
@@ -81,20 +85,20 @@ export default function LoginPage() {
         {/* Tagline */}
         <div className="flex flex-col gap-4">
           <h1 className="login-brand-heading text-4xl font-black leading-tight font-display">
-            Every subscription,
+            Take back control
             <br />
-            <span className="text-primary">perfectly tracked.</span>
+            of your <span className="text-primary">subscriptions.</span>
           </h1>
           <p className="login-brand-copy text-sm leading-relaxed max-w-xs">
-            One dashboard for all your recurring costs. No more surprise
-            charges, no more forgotten trials.
+            Join thousands who&apos;ve stopped paying for things they forgot
+            about. Set up in under 2 minutes.
           </p>
 
           {/* Stat pills */}
           <div className="flex gap-3 mt-2">
             {[
-              { value: "$2.4k", label: "avg. saved/yr" },
-              { value: "94%", label: "renewal accuracy" },
+              { value: "2 min", label: "avg. setup time" },
+              { value: "Free", label: "to get started" },
             ].map(({ value, label }) => (
               <div
                 key={label}
@@ -141,9 +145,9 @@ export default function LoginPage() {
           {/* Heading */}
           <div className="flex flex-col gap-1">
             <h2 className="text-2xl font-black text-foreground">
-              Welcome back
+              Create your account
             </h2>
-            <p className="text-sm text-muted">Sign in to continue</p>
+            <p className="text-sm text-muted">Get started — it&apos;s free</p>
           </div>
 
           {/* Form */}
@@ -152,6 +156,29 @@ export default function LoginPage() {
             onSubmit={handleSubmit(onSubmit)}
             noValidate
           >
+            {/* Name */}
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[10px] font-bold tracking-widest uppercase text-muted">
+                Full name
+              </label>
+              <Input
+                {...register("name")}
+                type="text"
+                placeholder="Paul Atreides"
+                autoComplete="name"
+                disabled={isSubmitting}
+                aria-invalid={Boolean(errors.name)}
+                className={cn(
+                  errors.name && "border-tertiary/60 focus:border-tertiary/60"
+                )}
+              />
+              {errors.name && (
+                <p className="text-[11px] text-tertiary">
+                  {errors.name.message}
+                </p>
+              )}
+            </div>
+
             {/* Email */}
             <div className="flex flex-col gap-1.5">
               <label className="text-[10px] font-bold tracking-widest uppercase text-muted">
@@ -177,39 +204,28 @@ export default function LoginPage() {
 
             {/* Password */}
             <div className="flex flex-col gap-1.5">
-              <div className="flex items-center justify-between">
-                <label className="text-[10px] font-bold tracking-widest uppercase text-muted">
-                  Password
-                </label>
-                <Link
-                  href="/forgot-password"
-                  className="text-[10px] font-semibold text-primary hover:opacity-80 transition-opacity"
-                >
-                  Forgot password?
-                </Link>
-              </div>
+              <label className="text-[10px] font-bold tracking-widest uppercase text-muted">
+                Password
+              </label>
               <div className="relative">
                 <Input
                   {...register("password")}
-                  type={showPassword ? "text" : "password"}
-                  placeholder="••••••••"
-                  autoComplete="current-password"
-                  disabled={isSubmitting}
-                  aria-invalid={Boolean(errors.password)}
                   className={cn(
                     "pr-11",
                     errors.password &&
                       "border-tertiary/60 focus:border-tertiary/60"
                   )}
+                  type={showPassword ? "text" : "password"}
+                  placeholder="Min. 8 characters"
+                  autoComplete="new-password"
+                  disabled={isSubmitting}
+                  aria-invalid={Boolean(errors.password)}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword((v) => !v)}
                   disabled={isSubmitting}
-                  className={cn(
-                    "absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-foreground transition-colors",
-                    isSubmitting && "opacity-50 pointer-events-none"
-                  )}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-foreground transition-colors"
                 >
                   {showPassword ? (
                     <EyeSlash size={18} color="currentColor" />
@@ -225,6 +241,45 @@ export default function LoginPage() {
               )}
             </div>
 
+            {/* Confirm password */}
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[10px] font-bold tracking-widest uppercase text-muted">
+                Confirm password
+              </label>
+              <div className="relative">
+                <Input
+                  {...register("confirmPassword")}
+                  className={cn(
+                    "pr-11",
+                    errors.confirmPassword &&
+                      "border-tertiary/60 focus:border-tertiary/60"
+                  )}
+                  type={showConfirm ? "text" : "password"}
+                  placeholder="••••••••"
+                  autoComplete="new-password"
+                  disabled={isSubmitting}
+                  aria-invalid={Boolean(errors.confirmPassword)}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirm((v) => !v)}
+                  disabled={isSubmitting}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-foreground transition-colors"
+                >
+                  {showConfirm ? (
+                    <EyeSlash size={18} color="currentColor" />
+                  ) : (
+                    <Eye size={18} color="currentColor" />
+                  )}
+                </button>
+              </div>
+              {errors.confirmPassword && (
+                <p className="text-[11px] text-tertiary">
+                  {errors.confirmPassword.message}
+                </p>
+              )}
+            </div>
+
             <Button
               type="submit"
               variant="primary"
@@ -232,7 +287,7 @@ export default function LoginPage() {
               disabled={!isValid || isSubmitting}
               isLoading={isSubmitting}
             >
-              Sign In
+              Create account
             </Button>
           </form>
 
@@ -255,14 +310,14 @@ export default function LoginPage() {
             Continue with Google
           </Button>
 
-          {/* Sign up */}
+          {/* Sign in */}
           <p className="text-center text-sm text-muted">
-            Don&apos;t have an account?{" "}
+            Already have an account?{" "}
             <Link
-              href="/signup"
+              href="/login"
               className="text-primary font-semibold hover:opacity-80 transition-opacity"
             >
-              Sign up
+              Sign in
             </Link>
           </p>
         </motion.div>

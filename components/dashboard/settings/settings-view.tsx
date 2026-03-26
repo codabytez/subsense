@@ -18,6 +18,7 @@ import {
 import { FadeIn } from "@/components/motion";
 import { FilterChip } from "@/components/ui";
 import { Section, Toggle, CardChip } from "@/components/dashboard/settings";
+import { DeleteAccountModal } from "@/components/dashboard/settings/delete-account-modal";
 import { useTheme, type Theme } from "@/providers/theme-provider";
 import { cn } from "@/lib/utils";
 
@@ -49,6 +50,7 @@ const CURRENCIES = [
 export function SettingsView() {
   const { theme, setTheme } = useTheme();
   const [currency, setCurrency] = useState(CURRENCIES[0]);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   return (
     <>
@@ -249,6 +251,7 @@ export function SettingsView() {
                 </span>
               </div>
               <button
+                onClick={() => setShowDeleteModal(true)}
                 className="flex items-center gap-3 px-4 py-4 rounded-xl hover:opacity-90 transition-opacity w-full"
                 style={{ backgroundColor: "rgba(249,112,102,0.12)" }}
               >
@@ -321,6 +324,11 @@ export function SettingsView() {
           </div>
         </div>
       </FadeIn>
+
+      <DeleteAccountModal
+        open={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+      />
 
       {/* Sticky footer */}
       <div className="sticky -bottom-10 z-30 flex items-center justify-between px-8 py-5 border-t border-border bg-background/90 backdrop-blur-md -mx-4 md:-mx-8 -mb-4 md:-mb-8">

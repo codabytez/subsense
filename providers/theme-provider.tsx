@@ -14,8 +14,8 @@ const ThemeContext = createContext<{
   setTheme: (t: Theme) => void;
 }>({ theme: "Dark", setTheme: () => {} });
 
-const THEME_STORAGE_KEY = "theme";
-const THEME_CHANGE_EVENT = "theme-change";
+const THEME_STORAGE_KEY = "subsense-theme";
+const THEME_CHANGE_EVENT = "subsense-theme-change";
 
 function isTheme(value: string | null): value is Theme {
   return value === "Dark" || value === "Light" || value === "Auto";

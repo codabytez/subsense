@@ -15,6 +15,7 @@ import {
 } from "iconsax-reactjs";
 import { Button } from "@/components/ui";
 import { SubscriptionFormModal } from "@/components/dashboard/subscriptions";
+import { SignOutModal } from "@/components/dashboard/sign-out-modal";
 import { cn } from "@/lib/utils";
 
 const navItems = [
@@ -48,6 +49,7 @@ const itemVariants: Variants = {
 export function Sidebar() {
   const pathname = usePathname();
   const [showForm, setShowForm] = useState(false);
+  const [showSignOut, setShowSignOut] = useState(false);
 
   return (
     <>
@@ -67,9 +69,18 @@ export function Sidebar() {
           <Image
             src="/white_logo_mark.svg"
             alt="Subsense"
-            width={26}
-            height={26}
-            style={{ width: 26, height: "auto" }}
+            width={29}
+            height={27}
+            className="login-logo-dark"
+            style={{ width: 28, height: "auto" }}
+          />
+          <Image
+            src="/dark_logo_mark.svg"
+            alt="Subsense"
+            width={76}
+            height={72}
+            className="login-logo-light"
+            style={{ width: 28, height: "auto" }}
           />
           <div className="flex flex-col">
             <span className="text-[11px] font-bold tracking-widest uppercase text-primary leading-none font-display">
@@ -155,7 +166,10 @@ export function Sidebar() {
             Support
           </Link>
 
-          <button className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-[11px] font-semibold tracking-widest uppercase text-muted hover:text-foreground hover:bg-white/3 transition-colors duration-200 w-full cursor-pointer">
+          <button
+            onClick={() => setShowSignOut(true)}
+            className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-[11px] font-semibold tracking-widest uppercase text-muted hover:text-foreground hover:bg-white/3 transition-colors duration-200 w-full cursor-pointer"
+          >
             <LogoutCurve size={20} variant="Outline" color="currentColor" />
             Sign Out
           </button>
@@ -167,6 +181,7 @@ export function Sidebar() {
         onClose={() => setShowForm(false)}
         onSave={() => setShowForm(false)}
       />
+      <SignOutModal open={showSignOut} onClose={() => setShowSignOut(false)} />
     </>
   );
 }
