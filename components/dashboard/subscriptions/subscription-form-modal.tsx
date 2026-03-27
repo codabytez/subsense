@@ -103,24 +103,6 @@ function iconFromName(name: string): { rgba: string; initial: string } {
   return { ...ICON_COLORS[hash % ICON_COLORS.length], initial };
 }
 
-// ── Form state ────────────────────────────────────────────────
-interface SubscriptionFormData {
-  name: string;
-  plan: string;
-  amount: string;
-  amountApprox: boolean;
-  cycle: BillingCycle;
-  customInterval: string;
-  nextPaymentDate: string;
-  category: string;
-  paymentMethodId: string;
-  paymentMode: "auto" | "manual";
-  remindersEnabled: boolean;
-  reminderIntervals: string[];
-  status: SubscriptionStatus;
-  notes: string;
-}
-
 const DEFAULT_FORM: SubscriptionFormData = {
   name: "",
   plan: "",

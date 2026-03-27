@@ -58,3 +58,21 @@ interface Subscription {
   reminderIntervals?: string[];
   vaultNotes?: string;
 }
+
+// ── Form state ────────────────────────────────────────────────
+interface SubscriptionFormData {
+  name: string;
+  plan: string;
+  amount: string;
+  amountApprox: boolean;
+  cycle: BillingCycle;
+  customInterval: string;
+  nextPaymentDate: string;
+  category: string;
+  paymentMethodId: string;
+  paymentMode: "auto" | "manual";
+  remindersEnabled: boolean;
+  reminderIntervals: string[];
+  status: SubscriptionStatus;
+  notes: string;
+}

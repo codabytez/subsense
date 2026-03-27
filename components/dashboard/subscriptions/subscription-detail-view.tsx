@@ -9,7 +9,6 @@ import {
   RoiUsage,
   LinkedAccount,
   SubscriptionFormModal,
-  type SubscriptionFormData,
 } from "@/components/dashboard/subscriptions";
 import { PaymentConfirmModal } from "@/components/dashboard/calendar/payment-confirm-modal";
 import type { CalendarEvent } from "@/components/dashboard/calendar/calendar-grid";
@@ -35,13 +34,13 @@ export function SubscriptionDetailView() {
   const [showForm, setShowForm] = useState(false);
   const [paid, setPaid] = useState(false);
 
-  const formInitial: Partial<SubscriptionFormData> = {
-    name: subscription.name,
-    plan: subscription.plan,
-    amount: String(subscription.amount),
-    paymentMode: subscription.paymentMode,
-    status: subscription.status,
-  };
+  // const formInitial: Partial<SubscriptionFormData> = {
+  //   name: subscription.name,
+  //   plan: subscription.plan,
+  //   amount: String(subscription.amount),
+  //   paymentMode: subscription.paymentMode,
+  //   status: subscription.status,
+  // };
 
   const event: CalendarEvent = {
     name: subscription.name,
@@ -93,8 +92,8 @@ export function SubscriptionDetailView() {
       <SubscriptionFormModal
         open={showForm}
         onClose={() => setShowForm(false)}
-        onSave={() => setShowForm(false)}
-        initial={formInitial}
+        // onSave={() => setShowForm(false)}
+        // initial={formInitial}
       />
     </>
   );
