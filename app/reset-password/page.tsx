@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -18,6 +18,14 @@ import {
 } from "@/lib/validations/auth";
 
 export default function ResetPasswordPage() {
+  return (
+    <Suspense fallback={<ResetPasswordFallback />}>
+      <ResetPasswordContent />
+    </Suspense>
+  );
+}
+
+function ResetPasswordContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const token = searchParams.get("token");
@@ -233,6 +241,28 @@ export default function ResetPasswordPage() {
           </motion.div>
         )}
       </motion.div>
+    </div>
+  );
+}
+
+function ResetPasswordFallback() {
+  return (
+    <div className="min-h-screen bg-background flex items-center justify-center px-6 py-10">
+      <div className="w-full max-w-100 flex flex-col gap-8 animate-pulse">
+        <div className="flex items-center gap-3">
+          <div className="h-6 w-6 rounded bg-muted/30" />
+          <div className="h-4 w-24 rounded bg-muted/30" />
+        </div>
+        <div className="flex flex-col gap-3">
+          <div className="h-8 w-48 rounded bg-muted/30" />
+          <div className="h-4 w-64 rounded bg-muted/20" />
+        </div>
+        <div className="flex flex-col gap-4">
+          <div className="h-12 w-full rounded-2xl bg-muted/20" />
+          <div className="h-12 w-full rounded-2xl bg-muted/20" />
+          <div className="h-12 w-full rounded-2xl bg-muted/30" />
+        </div>
+      </div>
     </div>
   );
 }
