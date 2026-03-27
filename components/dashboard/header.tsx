@@ -1,11 +1,26 @@
 "use client";
 
-import { SearchNormal1, Notification, ProfileCircle } from "iconsax-reactjs";
+import Image from "next/image";
+import Link from "next/link";
+import { SearchNormal1, Notification } from "iconsax-reactjs";
 import { motion } from "framer-motion";
 import { usePathname } from "next/navigation";
+import { useQuery } from "convex/react";
+import { api } from "@/convex/_generated/api";
+
+function initials(name: string) {
+  return name
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0].toUpperCase())
+    .join("");
+}
 
 export default function Header() {
   const pathname = usePathname();
+  const user = useQuery(api.users.getCurrentUser);
+
   if (pathname === "/dashboard/settings") return null;
 
   return (
@@ -42,16 +57,29 @@ export default function Header() {
         <div className="w-px h-5 bg-border" />
 
         {/* User */}
-        <button className="flex items-center gap-2.5 hover:opacity-80 transition-opacity">
-          <span className="text-sm font-semibold tracking-widest text-foreground font-display uppercase">
-            Alex Mercer
+        <Link
+          href="/dashboard/settings"
+          className="flex items-center gap-2.5 hover:opacity-80 transition-opacity"
+        >
+          <span className="text-sm font-semibold tracking-widest text-foreground font-display uppercase truncate max-w-32">
+            {user?.name ?? "—"}
           </span>
-          <ProfileCircle
-            size={28}
-            color="var(--color-muted)"
-            variant="Outline"
-          />
-        </button>
+          <div className="relative w-8 h-8 rounded-full overflow-hidden bg-primary shrink-0 flex items-center justify-center">
+            {user?.avatarUrl ? (
+              <Image
+                src={user.avatarUrl}
+                alt="avatar"
+                fill
+                className="object-cover"
+                unoptimized
+              />
+            ) : (
+              <span className="text-[11px] font-black text-white">
+                {user?.name ? initials(user.name) : "—"}
+              </span>
+            )}
+          </div>
+        </Link>
       </motion.div>
     </header>
   );

@@ -35,7 +35,9 @@ interface Subscription {
   /** Highlights renewal value in tertiary (urgent) color */
   renewalUrgent?: boolean;
   /** Tailwind bg class for the service icon tile */
-  iconBg: string;
+  iconBg?: string;
+  /** Raw rgba/hex color for the icon tile (used when iconBg is absent) */
+  iconColor?: string;
   iconInitial: string;
   /** Hex color used for the detail-page gradient and calendar dot */
   gradientColor?: string;

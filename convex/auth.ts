@@ -11,7 +11,7 @@ export const createAuth = (ctx: GenericCtx) => {
   return betterAuth({
     appName: "Subsense",
     secret: process.env.BETTER_AUTH_SECRET,
-    baseURL: process.env.CONVEX_SITE_URL,
+    baseURL: process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000",
     trustedOrigins: [
       process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000",
       "https://*.vercel.app",
@@ -19,6 +19,13 @@ export const createAuth = (ctx: GenericCtx) => {
     user: {
       deleteUser: {
         enabled: true,
+      },
+    },
+    socialProviders: {
+      google: {
+        clientId: process.env.GOOGLE_CLIENT_ID as string,
+        clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
+        prompt: "select_account",
       },
     },
     emailAndPassword: {

@@ -28,7 +28,7 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const token = await getToken();
+  const token = await getToken().catch(() => null);
 
   return (
     <html

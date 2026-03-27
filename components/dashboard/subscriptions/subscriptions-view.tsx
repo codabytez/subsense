@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useQuery } from "convex/react";
 import { FadeIn } from "@/components/motion";
 import {
   SubscriptionCard,
@@ -8,99 +9,138 @@ import {
   SubscriptionFormModal,
 } from "@/components/dashboard/subscriptions";
 import { ViewToggle, Fab } from "@/components/ui";
+import { api } from "@/convex/_generated/api";
+import type { Doc } from "@/convex/_generated/dataModel";
+import { formatAmount } from "@/lib/currency";
 
-const subscriptions: Subscription[] = [
-  {
-    id: "1",
-    name: "Netflix",
-    category: "Entertainment",
-    amount: 15.99,
-    cycle: "monthly",
-    status: "active",
-    renewalLabel: "RENEWS_IN",
-    renewalValue: "12 Days",
-    iconBg: "bg-tertiary/20",
-    iconInitial: "N",
-  },
-  {
-    id: "2",
-    name: "Spotify",
-    category: "Entertainment",
-    amount: 120.0,
-    cycle: "annual",
-    status: "active",
-    renewalLabel: "RENEWS_IN",
-    renewalValue: "Oct 24, 2024",
-    iconBg: "bg-secondary/20",
-    iconInitial: "S",
-  },
-  {
-    id: "3",
-    name: "Linear",
-    category: "Productivity",
-    amount: 0.0,
-    cycle: "trial",
-    status: "trial",
-    renewalLabel: "TRIAL_ENDS",
-    renewalValue: "4 Days",
-    renewalUrgent: true,
-    iconBg: "bg-primary/20",
-    iconInitial: "L",
-  },
-  {
-    id: "4",
-    name: "Notion",
-    category: "Productivity",
-    amount: 10.0,
-    cycle: "monthly",
-    status: "active",
-    renewalLabel: "RENEWS_IN",
-    renewalValue: "3 Days",
-    iconBg: "bg-muted/20",
-    iconInitial: "N",
-  },
-  {
-    id: "5",
-    name: "ChatGPT Plus",
-    category: "Utility",
-    amount: 20.0,
-    cycle: "monthly",
-    status: "paused",
-    renewalLabel: "RESUME_ON",
-    renewalValue: "Manual",
-    iconBg: "bg-secondary/10",
-    iconInitial: "C",
-  },
-  {
-    id: "6",
-    name: "Amazon Web Services",
-    category: "Infrastructure",
-    amount: 82.51,
-    amountApprox: true,
-    cycle: "usage-based",
-    status: "active",
-    renewalLabel: "NEXT_BILLING",
-    renewalValue: "Oct 1, 2024",
-    iconBg: "bg-tertiary/10",
-    iconInitial: "A",
-  },
-];
+// ── Helpers ───────────────────────────────────────────────────
 
-const categories = [...new Set(subscriptions.map((s) => s.category))];
-const activeCount = subscriptions.filter((s) => s.status === "active").length;
-const totalMonthly = subscriptions
-  .filter((s) => s.status !== "paused")
-  .reduce(
-    (sum, s) => sum + (s.cycle === "annual" ? s.amount / 12 : s.amount),
-    0
-  );
+function iconInitialFromName(name: string): string {
+  const words = name.trim().split(/\s+/).filter(Boolean);
+  if (!words.length) return "?";
+  if (words.length === 1) return words[0].slice(0, 2).toUpperCase();
+  return (words[0][0] + words[words.length - 1][0]).toUpperCase();
+}
+
+function getRenewal(sub: Doc<"subscriptions">): {
+  renewalLabel: RenewalLabel;
+  renewalValue: string;
+  renewalUrgent: boolean;
+} {
+  if (sub.status === "paused") {
+    return {
+      renewalLabel: "RESUME_ON",
+      renewalValue: "Manual",
+      renewalUrgent: false,
+    };
+  }
+  if (sub.status === "cancelled") {
+    return {
+      renewalLabel: "NEXT_BILLING",
+      renewalValue: "Cancelled",
+      renewalUrgent: false,
+    };
+  }
+
+  if (!sub.nextPaymentDate) {
+    return {
+      renewalLabel: "RENEWS_IN",
+      renewalValue: "—",
+      renewalUrgent: false,
+    };
+  }
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const due = new Date(sub.nextPaymentDate);
+  due.setHours(0, 0, 0, 0);
+  const diffDays = Math.round((due.getTime() - today.getTime()) / 86_400_000);
+
+  const label: RenewalLabel =
+    sub.status === "trial" ? "TRIAL_ENDS" : "RENEWS_IN";
+
+  if (diffDays < 0) {
+    return {
+      renewalLabel: label,
+      renewalValue: "Overdue",
+      renewalUrgent: true,
+    };
+  }
+  if (diffDays === 0) {
+    return { renewalLabel: label, renewalValue: "Today", renewalUrgent: true };
+  }
+  if (diffDays <= 7) {
+    return {
+      renewalLabel: label,
+      renewalValue: `${diffDays} Day${diffDays === 1 ? "" : "s"}`,
+      renewalUrgent: diffDays <= 3,
+    };
+  }
+
+  const formatted = due.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: due.getFullYear() !== today.getFullYear() ? "numeric" : undefined,
+  });
+  return { renewalLabel: label, renewalValue: formatted, renewalUrgent: false };
+}
+
+function toCardShape(sub: Doc<"subscriptions">): Subscription {
+  const { renewalLabel, renewalValue, renewalUrgent } = getRenewal(sub);
+  return {
+    id: sub._id,
+    name: sub.name,
+    plan: sub.plan,
+    category: sub.category,
+    amount: sub.amount,
+    amountApprox: sub.amountApprox,
+    cycle: sub.cycle,
+    status: sub.status,
+    nextPaymentDate: sub.nextPaymentDate,
+    renewalLabel,
+    renewalValue,
+    renewalUrgent,
+    currency: sub.currency,
+    iconColor: sub.iconColor,
+    iconInitial: iconInitialFromName(sub.name),
+    paymentMode: sub.paymentMode,
+    remindersEnabled: sub.remindersEnabled,
+    reminderIntervals: sub.reminderIntervals,
+    vaultNotes: sub.notes,
+  };
+}
+
+// ── Component ─────────────────────────────────────────────────
 
 export function SubscriptionsView() {
+  const rawSubs = useQuery(api.subscriptions.getSubscriptions);
+  const user = useQuery(api.users.getCurrentUser);
+
   const [view, setView] = useState<"grid" | "list">("grid");
   const [sortBy, setSortBy] = useState("Next Renewal");
   const [category, setCategory] = useState("All Services");
   const [status, setStatus] = useState("Any Status");
   const [showForm, setShowForm] = useState(false);
+
+  const subscriptions = useMemo(
+    () => (rawSubs ?? []).map(toCardShape),
+    [rawSubs]
+  );
+
+  const categories = useMemo(
+    () => [...new Set(subscriptions.map((s) => s.category))],
+    [subscriptions]
+  );
+
+  const activeCount = subscriptions.filter((s) => s.status === "active").length;
+
+  const totalMonthly = subscriptions
+    .filter((s) => s.status !== "paused" && s.status !== "cancelled")
+    .reduce((sum, s) => {
+      if (s.cycle === "annual") return sum + s.amount / 12;
+      if (s.cycle === "weekly") return sum + s.amount * 4.33;
+      return sum + s.amount;
+    }, 0);
 
   const filtered = useMemo(() => {
     let result = [...subscriptions];
@@ -108,11 +148,9 @@ export function SubscriptionsView() {
     if (category !== "All Services") {
       result = result.filter((s) => s.category === category);
     }
-
     if (status !== "Any Status") {
       result = result.filter((s) => s.status === status.toLowerCase());
     }
-
     if (sortBy === "Name") {
       result.sort((a, b) => a.name.localeCompare(b.name));
     } else if (sortBy === "Amount") {
@@ -120,7 +158,9 @@ export function SubscriptionsView() {
     }
 
     return result;
-  }, [sortBy, category, status]);
+  }, [subscriptions, sortBy, category, status]);
+
+  const isLoading = rawSubs === undefined;
 
   return (
     <FadeIn className="relative min-h-full">
@@ -131,14 +171,22 @@ export function SubscriptionsView() {
             My Subscriptions
           </h1>
           <p className="text-sm text-muted mt-1">
-            Managing{" "}
-            <span className="text-primary font-semibold">
-              {activeCount} active
-            </span>{" "}
-            services costing{" "}
-            <span className="text-primary font-semibold font-mono">
-              ${totalMonthly.toFixed(2)}/mo
-            </span>
+            {isLoading ? (
+              ""
+            ) : subscriptions.length === 0 ? (
+              "Your vault is empty — add your first subscription."
+            ) : (
+              <>
+                Managing{" "}
+                <span className="text-primary font-semibold">
+                  {activeCount} active
+                </span>{" "}
+                services costing{" "}
+                <span className="text-primary font-semibold font-mono">
+                  {formatAmount(totalMonthly, user?.currency, false)}/mo
+                </span>
+              </>
+            )}
           </p>
         </div>
         <ViewToggle view={view} onChange={setView} />
@@ -156,35 +204,59 @@ export function SubscriptionsView() {
       />
 
       {/* Grid / List */}
-      <div
-        className={
-          view === "grid"
-            ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-6"
-            : "flex flex-col gap-3 mt-6"
-        }
-      >
-        {filtered.length > 0 ? (
-          filtered.map((sub, i) => (
-            <SubscriptionCard
-              key={sub.id}
-              subscription={sub}
-              index={i}
-              view={view}
+      {isLoading ? (
+        <div
+          className={
+            view === "grid"
+              ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-6"
+              : "flex flex-col gap-3 mt-6"
+          }
+        >
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div
+              key={i}
+              className={
+                view === "grid"
+                  ? "h-44 rounded-2xl bg-surface border border-border animate-pulse"
+                  : "h-16 rounded-xl bg-surface border border-border animate-pulse"
+              }
             />
-          ))
-        ) : (
-          <p className="col-span-full text-center text-muted text-sm py-16">
-            No subscriptions match the selected filters.
-          </p>
-        )}
-      </div>
+          ))}
+        </div>
+      ) : (
+        <div
+          className={
+            view === "grid"
+              ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-6"
+              : "flex flex-col gap-3 mt-6"
+          }
+        >
+          {subscriptions.length === 0 ? (
+            <p className="col-span-full text-center text-muted text-sm py-16">
+              No subscriptions yet — add your first one.
+            </p>
+          ) : filtered.length === 0 ? (
+            <p className="col-span-full text-center text-muted text-sm py-16">
+              No subscriptions match the selected filters.
+            </p>
+          ) : (
+            filtered.map((sub, i) => (
+              <SubscriptionCard
+                key={sub.id}
+                subscription={sub}
+                index={i}
+                view={view}
+              />
+            ))
+          )}
+        </div>
+      )}
 
       <Fab onClick={() => setShowForm(true)} />
 
       <SubscriptionFormModal
         open={showForm}
         onClose={() => setShowForm(false)}
-        onSave={() => setShowForm(false)}
       />
     </FadeIn>
   );

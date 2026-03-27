@@ -9,8 +9,13 @@
  */
 
 import type * as auth from "../auth.js";
+import type * as categories from "../categories.js";
+import type * as crons from "../crons.js";
 import type * as http from "../http.js";
 import type * as lib_email from "../lib/email.js";
+import type * as notifications from "../notifications.js";
+import type * as paymentMethods from "../paymentMethods.js";
+import type * as subscriptions from "../subscriptions.js";
 import type * as users from "../users.js";
 
 import type {
@@ -21,8 +26,13 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   auth: typeof auth;
+  categories: typeof categories;
+  crons: typeof crons;
   http: typeof http;
   "lib/email": typeof lib_email;
+  notifications: typeof notifications;
+  paymentMethods: typeof paymentMethods;
+  subscriptions: typeof subscriptions;
   users: typeof users;
 }>;
 

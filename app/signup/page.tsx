@@ -11,13 +11,14 @@ import { Eye, EyeSlash } from "iconsax-reactjs";
 import { toast } from "sonner";
 import { Button, Input } from "@/components/ui";
 import { cn } from "@/lib/utils";
-import { signUp } from "@/lib/auth-client";
+import { signIn, signUp } from "@/lib/auth-client";
 import { signupSchema, type SignupFormValues } from "@/lib/validations/auth";
 
 export default function SignupPage() {
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
 
   const {
     register,
@@ -34,12 +35,13 @@ export default function SignupPage() {
     },
   });
 
+  const isLoading = isSubmitting || isGoogleLoading;
+
   async function onSubmit(values: SignupFormValues) {
     const { error } = await signUp.email({
       name: values.name,
       email: values.email,
       password: values.password,
-      callbackURL: `${window.location.origin}/dashboard`,
     });
 
     if (error) {
@@ -48,6 +50,16 @@ export default function SignupPage() {
     }
 
     router.push(`/verify-email?email=${encodeURIComponent(values.email)}`);
+  }
+
+  async function handleGoogleSignIn() {
+    setIsGoogleLoading(true);
+    try {
+      await signIn.social({ provider: "google", callbackURL: "/dashboard" });
+    } catch {
+      toast.error("Google sign in failed. Please try again.");
+      setIsGoogleLoading(false);
+    }
   }
 
   return (
@@ -166,7 +178,7 @@ export default function SignupPage() {
                 type="text"
                 placeholder="Paul Atreides"
                 autoComplete="name"
-                disabled={isSubmitting}
+                disabled={isLoading}
                 aria-invalid={Boolean(errors.name)}
                 className={cn(
                   errors.name && "border-tertiary/60 focus:border-tertiary/60"
@@ -189,7 +201,7 @@ export default function SignupPage() {
                 type="email"
                 placeholder="you@example.com"
                 autoComplete="email"
-                disabled={isSubmitting}
+                disabled={isLoading}
                 aria-invalid={Boolean(errors.email)}
                 className={cn(
                   errors.email && "border-tertiary/60 focus:border-tertiary/60"
@@ -218,13 +230,13 @@ export default function SignupPage() {
                   type={showPassword ? "text" : "password"}
                   placeholder="Min. 8 characters"
                   autoComplete="new-password"
-                  disabled={isSubmitting}
+                  disabled={isLoading}
                   aria-invalid={Boolean(errors.password)}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword((v) => !v)}
-                  disabled={isSubmitting}
+                  disabled={isLoading}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-foreground transition-colors"
                 >
                   {showPassword ? (
@@ -257,13 +269,13 @@ export default function SignupPage() {
                   type={showConfirm ? "text" : "password"}
                   placeholder="••••••••"
                   autoComplete="new-password"
-                  disabled={isSubmitting}
+                  disabled={isLoading}
                   aria-invalid={Boolean(errors.confirmPassword)}
                 />
                 <button
                   type="button"
                   onClick={() => setShowConfirm((v) => !v)}
-                  disabled={isSubmitting}
+                  disabled={isLoading}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-foreground transition-colors"
                 >
                   {showConfirm ? (
@@ -284,7 +296,7 @@ export default function SignupPage() {
               type="submit"
               variant="primary"
               className="w-full h-12 text-sm font-bold mt-1"
-              disabled={!isValid || isSubmitting}
+              disabled={!isValid || isLoading}
               isLoading={isSubmitting}
             >
               Create account
@@ -304,9 +316,13 @@ export default function SignupPage() {
           <Button
             variant="outlined"
             className="w-full h-12 text-sm font-semibold gap-3"
-            disabled={isSubmitting}
+            disabled={isLoading}
+            isLoading={isGoogleLoading}
+            onClick={handleGoogleSignIn}
           >
-            <Image src="/google.svg" alt="Google" width={18} height={18} />
+            {!isGoogleLoading && (
+              <Image src="/google.svg" alt="Google" width={18} height={18} />
+            )}
             Continue with Google
           </Button>
 

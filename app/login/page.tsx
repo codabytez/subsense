@@ -17,6 +17,7 @@ import { loginSchema, type LoginFormValues } from "@/lib/validations/auth";
 export default function LoginPage() {
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
 
   const {
     register,
@@ -31,19 +32,31 @@ export default function LoginPage() {
     },
   });
 
+  const isLoading = isSubmitting || isGoogleLoading;
+
   async function onSubmit(values: LoginFormValues) {
-    const { error } = await signIn.email({
+    const result = await signIn.email({
       email: values.email,
       password: values.password,
-      callbackURL: "/dashboard",
     });
 
-    if (error) {
-      toast.error(error.message ?? "Sign in failed. Please try again.");
+    if (result.error) {
+      toast.error(result.error.message ?? "Sign in failed. Please try again.");
       return;
     }
 
+    router.refresh();
     router.push("/dashboard");
+  }
+
+  async function handleGoogleSignIn() {
+    setIsGoogleLoading(true);
+    try {
+      await signIn.social({ provider: "google", callbackURL: "/dashboard" });
+    } catch {
+      toast.error("Google sign in failed. Please try again.");
+      setIsGoogleLoading(false);
+    }
   }
 
   return (
@@ -162,7 +175,7 @@ export default function LoginPage() {
                 type="email"
                 placeholder="you@example.com"
                 autoComplete="email"
-                disabled={isSubmitting}
+                disabled={isLoading}
                 aria-invalid={Boolean(errors.email)}
                 className={cn(
                   errors.email && "border-tertiary/60 focus:border-tertiary/60"
@@ -194,7 +207,7 @@ export default function LoginPage() {
                   type={showPassword ? "text" : "password"}
                   placeholder="••••••••"
                   autoComplete="current-password"
-                  disabled={isSubmitting}
+                  disabled={isLoading}
                   aria-invalid={Boolean(errors.password)}
                   className={cn(
                     "pr-11",
@@ -205,10 +218,10 @@ export default function LoginPage() {
                 <button
                   type="button"
                   onClick={() => setShowPassword((v) => !v)}
-                  disabled={isSubmitting}
+                  disabled={isLoading}
                   className={cn(
                     "absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-foreground transition-colors",
-                    isSubmitting && "opacity-50 pointer-events-none"
+                    isLoading && "opacity-50 pointer-events-none"
                   )}
                 >
                   {showPassword ? (
@@ -229,7 +242,7 @@ export default function LoginPage() {
               type="submit"
               variant="primary"
               className="w-full h-12 text-sm font-bold mt-1"
-              disabled={!isValid || isSubmitting}
+              disabled={!isValid || isLoading}
               isLoading={isSubmitting}
             >
               Sign In
@@ -249,9 +262,13 @@ export default function LoginPage() {
           <Button
             variant="outlined"
             className="w-full h-12 text-sm font-semibold gap-3"
-            disabled={isSubmitting}
+            disabled={isLoading}
+            isLoading={isGoogleLoading}
+            onClick={handleGoogleSignIn}
           >
-            <Image src="/google.svg" alt="Google" width={18} height={18} />
+            {!isGoogleLoading && (
+              <Image src="/google.svg" alt="Google" width={18} height={18} />
+            )}
             Continue with Google
           </Button>
 

@@ -1,0 +1,14 @@
+export const DEFAULT_CATEGORIES = [
+  { name: "Entertainment", color: "#E50914" },
+  { name: "Music", color: "#1DB954" },
+  { name: "Software & Apps", color: "#6366F1" },
+  { name: "Cloud Storage", color: "#3478F6" },
+  { name: "Gaming", color: "#A259FF" },
+  { name: "Fitness & Health", color: "#10B981" },
+  { name: "Food & Delivery", color: "#F59E0B" },
+  { name: "News & Media", color: "#64748B" },
+  { name: "Learning & Education", color: "#0EA5E9" },
+  { name: "Finance", color: "#22C55E" },
+  { name: "Shopping", color: "#EC4899" },
+  { name: "Other", color: "#94A3B8" },
+] as const;

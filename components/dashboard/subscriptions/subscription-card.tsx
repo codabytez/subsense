@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { formatAmount } from "@/lib/currency";
 
 const statusConfig: Record<
   SubscriptionStatus,
@@ -72,8 +73,12 @@ export function SubscriptionCard({
     renewalValue,
     renewalUrgent,
     iconBg,
+    iconColor,
     iconInitial,
+    currency = "USD",
   } = subscription;
+
+  const iconStyle = iconColor ? { backgroundColor: iconColor } : undefined;
 
   const s = statusConfig[status];
 
@@ -88,14 +93,15 @@ export function SubscriptionCard({
       >
         <Link
           href={`/dashboard/subscriptions/${subscription.id}`}
-          className="bg-surface border border-border rounded-xl px-4 py-3 flex items-center gap-4 hover:border-primary/30 transition-colors"
+          className="bg-surface border border-border rounded-xl px-4 py-3 flex items-start gap-4 hover:border-primary/30 transition-colors"
         >
           {/* Icon */}
           <div
             className={cn(
-              "w-9 h-9 rounded-xl flex items-center justify-center text-sm font-bold text-foreground shrink-0",
+              "size-10 rounded-xl flex items-center justify-center text-sm font-bold text-foreground shrink-0",
               iconBg
             )}
+            style={iconStyle}
           >
             {iconInitial}
           </div>
@@ -125,7 +131,7 @@ export function SubscriptionCard({
           {/* Amount */}
           <div className="flex flex-col items-end gap-0.5 shrink-0">
             <span className="text-sm font-bold text-foreground font-mono">
-              {amountApprox ? "~" : ""}${amount.toFixed(2)}
+              {formatAmount(amount, currency, amountApprox)}
             </span>
             <span className="text-[9px] text-muted font-semibold uppercase tracking-widest">
               {cycleLabel[cycle]}
@@ -170,6 +176,7 @@ export function SubscriptionCard({
               "w-14 h-14 rounded-2xl flex items-center justify-center text-foreground text-xl font-bold shrink-0",
               iconBg
             )}
+            style={iconStyle}
           >
             {iconInitial}
           </div>
@@ -203,7 +210,7 @@ export function SubscriptionCard({
               {cycleLabel[cycle]}
             </span>
             <span className="text-2xl font-bold text-foreground font-mono">
-              {amountApprox ? "~" : ""}${amount.toFixed(2)}
+              {formatAmount(amount, currency, amountApprox)}
             </span>
           </div>
 

@@ -56,8 +56,62 @@ export const findByEmail = internalQuery({
 export const deleteUserData = internalMutation({
   args: { id: v.id("users") },
   handler: async (ctx, { id }) => {
+    await ctx.runMutation(internal.subscriptions.deleteSubscriptionsByUser, {
+      userId: id,
+    });
+    await ctx.runMutation(internal.categories.deleteCategoriesByUser, {
+      userId: id,
+    });
+    await ctx.runMutation(internal.paymentMethods.deletePaymentMethodsByUser, {
+      userId: id,
+    });
     await ctx.db.delete(id);
-    // TODO: delete subscriptions and other app data tied to this user
+  },
+});
+
+export const updateNotificationPreferences = mutation({
+  args: {
+    notifEmailDigest: v.boolean(),
+    notifPushEnabled: v.boolean(),
+    notifPriceSensitivity: v.boolean(),
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity?.email) throw new Error("Not authenticated");
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_email", (q) => q.eq("email", identity.email!))
+      .unique();
+    if (!user) throw new Error("User not found");
+    await ctx.db.patch(user._id, args);
+  },
+});
+
+export const updateProfile = mutation({
+  args: { name: v.string(), currency: v.string() },
+  handler: async (ctx, { name, currency }) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity?.email) throw new Error("Not authenticated");
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_email", (q) => q.eq("email", identity.email!))
+      .unique();
+    if (!user) throw new Error("User not found");
+    await ctx.db.patch(user._id, { name, currency });
+  },
+});
+
+export const updateAvatar = mutation({
+  args: { avatarUrl: v.string() },
+  handler: async (ctx, { avatarUrl }) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity?.email) throw new Error("Not authenticated");
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_email", (q) => q.eq("email", identity.email!))
+      .unique();
+    if (!user) throw new Error("User not found");
+    await ctx.db.patch(user._id, { avatarUrl });
   },
 });
 

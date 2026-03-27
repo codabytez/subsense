@@ -5,3 +5,4 @@ export * from "./fab";
 export * from "./filter-chip";
 export * from "./stat-card";
 export * from "./view-toggle";
+export * from "./select";

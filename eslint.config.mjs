@@ -19,7 +19,7 @@ const eslintConfig = [
           varsIgnorePattern: "^_",
         },
       ],
-      "@typescript-eslint/no-explicit-any": "warn",
+      "@typescript-eslint/no-explicit-any": "error",
       "no-var": "error",
       "prefer-const": "error",
       "prefer-arrow-callback": "error",

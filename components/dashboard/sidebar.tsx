@@ -4,6 +4,7 @@ import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useQuery } from "convex/react";
 import { motion, type Variants, type Transition } from "framer-motion";
 import {
   Category,
@@ -17,6 +18,7 @@ import { Button } from "@/components/ui";
 import { SubscriptionFormModal } from "@/components/dashboard/subscriptions";
 import { SignOutModal } from "@/components/dashboard/sign-out-modal";
 import { cn } from "@/lib/utils";
+import { api } from "@/convex/_generated/api";
 
 const navItems = [
   { label: "Overview", href: "/dashboard", icon: Category },
@@ -46,8 +48,18 @@ const itemVariants: Variants = {
   },
 };
 
+function initials(name: string) {
+  return name
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0].toUpperCase())
+    .join("");
+}
+
 export function Sidebar() {
   const pathname = usePathname();
+  const user = useQuery(api.users.getCurrentUser);
   const [showForm, setShowForm] = useState(false);
   const [showSignOut, setShowSignOut] = useState(false);
 
@@ -87,7 +99,7 @@ export function Sidebar() {
               Subsense
             </span>
             <span className="text-[10px] tracking-widest uppercase text-muted leading-none mt-1">
-              Premium Tier
+              Free Tier
             </span>
           </div>
         </motion.div>
@@ -173,13 +185,42 @@ export function Sidebar() {
             <LogoutCurve size={20} variant="Outline" color="currentColor" />
             Sign Out
           </button>
+
+          {/* User profile strip */}
+          <Link
+            href="/dashboard/settings"
+            className="flex items-center gap-3 mt-2 px-3 py-2.5 rounded-xl hover:bg-white/3 transition-colors duration-200 group"
+          >
+            <div className="relative w-8 h-8 rounded-full overflow-hidden bg-primary shrink-0 flex items-center justify-center">
+              {user?.avatarUrl ? (
+                <Image
+                  src={user.avatarUrl}
+                  alt="avatar"
+                  fill
+                  className="object-cover"
+                  unoptimized
+                />
+              ) : (
+                <span className="text-[11px] font-black text-white">
+                  {user?.name ? initials(user.name) : "—"}
+                </span>
+              )}
+            </div>
+            <div className="flex flex-col min-w-0">
+              <span className="text-xs font-bold text-foreground truncate leading-none">
+                {user?.name ?? "—"}
+              </span>
+              <span className="text-[10px] text-muted mt-0.5 truncate">
+                {user?.email ?? ""}
+              </span>
+            </div>
+          </Link>
         </motion.div>
       </motion.aside>
 
       <SubscriptionFormModal
         open={showForm}
         onClose={() => setShowForm(false)}
-        onSave={() => setShowForm(false)}
       />
       <SignOutModal open={showSignOut} onClose={() => setShowSignOut(false)} />
     </>
