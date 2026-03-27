@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -13,6 +13,14 @@ import { authClient } from "@/lib/auth-client";
 const COOLDOWN = 60;
 
 export default function VerifyEmailPage() {
+  return (
+    <Suspense fallback={<VerifyEmailFallback />}>
+      <VerifyEmailContent />
+    </Suspense>
+  );
+}
+
+function VerifyEmailContent() {
   const searchParams = useSearchParams();
   const email = searchParams.get("email") ?? "";
 
@@ -130,6 +138,29 @@ export default function VerifyEmailPage() {
           hours.
         </p>
       </motion.div>
+    </div>
+  );
+}
+
+function VerifyEmailFallback() {
+  return (
+    <div className="min-h-screen bg-background flex items-center justify-center px-6 py-10">
+      <div className="w-full max-w-sm flex flex-col items-center gap-8 text-center animate-pulse">
+        <div className="flex items-center gap-3">
+          <div className="h-6 w-6 rounded bg-muted/30" />
+          <div className="h-4 w-24 rounded bg-muted/30" />
+        </div>
+        <div className="w-20 h-20 rounded-full bg-primary/10 border border-primary/20" />
+        <div className="flex w-full flex-col items-center gap-2">
+          <div className="h-8 w-40 rounded bg-muted/30" />
+          <div className="h-4 w-64 rounded bg-muted/20" />
+          <div className="h-4 w-48 rounded bg-muted/20" />
+        </div>
+        <div className="w-full flex flex-col gap-3">
+          <div className="h-12 w-full rounded-2xl bg-muted/20" />
+          <div className="h-5 w-28 self-center rounded bg-muted/20" />
+        </div>
+      </div>
     </div>
   );
 }
