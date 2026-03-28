@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Warning2, Eye, EyeSlash } from "iconsax-reactjs";
@@ -29,6 +29,15 @@ export function DeleteAccountModal({ open, onClose }: DeleteAccountModalProps) {
   const [showPassword, setShowPassword] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [passwordError, setPasswordError] = useState("");
+  const [hasPassword, setHasPassword] = useState<boolean | null>(null);
+
+  // Detect if user has a password account (Google-only users don't)
+  useEffect(() => {
+    if (!open) return;
+    authClient.listAccounts().then(({ data }) => {
+      setHasPassword(data?.some((a) => a.providerId === "credential") ?? false);
+    });
+  }, [open]);
 
   function handleClose() {
     if (isDeleting) return;
@@ -43,21 +52,25 @@ export function DeleteAccountModal({ open, onClose }: DeleteAccountModalProps) {
     if (!user?.email) return;
     setIsDeleting(true);
     setPasswordError("");
-    try {
-      const result = await authClient.signIn.email({
-        email: user.email,
-        password,
-      });
-      if (result.error) {
+
+    if (hasPassword) {
+      try {
+        const result = await authClient.signIn.email({
+          email: user.email,
+          password,
+        });
+        if (result.error) {
+          setPasswordError("Incorrect password. Please try again.");
+          setIsDeleting(false);
+          return;
+        }
+      } catch {
         setPasswordError("Incorrect password. Please try again.");
         setIsDeleting(false);
         return;
       }
-    } catch {
-      setPasswordError("Incorrect password. Please try again.");
-      setIsDeleting(false);
-      return;
     }
+
     try {
       await deleteAccount();
       await signOut();
@@ -123,18 +136,20 @@ export function DeleteAccountModal({ open, onClose }: DeleteAccountModalProps) {
                 </div>
               </div>
 
-              {/* Step indicators */}
-              <div className="flex items-center gap-2">
-                {([1, 2] as const).map((s) => (
-                  <div
-                    key={s}
-                    className={cn(
-                      "h-1 flex-1 rounded-full transition-colors duration-300",
-                      step >= s ? "bg-tertiary" : "bg-border"
-                    )}
-                  />
-                ))}
-              </div>
+              {/* Step indicators — only show for password users */}
+              {hasPassword && (
+                <div className="flex items-center gap-2">
+                  {([1, 2] as const).map((s) => (
+                    <div
+                      key={s}
+                      className={cn(
+                        "h-1 flex-1 rounded-full transition-colors duration-300",
+                        step >= s ? "bg-tertiary" : "bg-border"
+                      )}
+                    />
+                  ))}
+                </div>
+              )}
 
               {/* Step 1 — type DELETE */}
               {step === 1 && (
@@ -159,10 +174,11 @@ export function DeleteAccountModal({ open, onClose }: DeleteAccountModalProps) {
                     variant="primary"
                     className="w-full h-12 text-sm font-bold"
                     style={{ backgroundColor: "var(--color-tertiary)" }}
-                    disabled={confirmText !== CONFIRM_WORD}
-                    onClick={() => setStep(2)}
+                    disabled={confirmText !== CONFIRM_WORD || isDeleting}
+                    isLoading={isDeleting && !hasPassword}
+                    onClick={() => (hasPassword ? setStep(2) : handleDelete())}
                   >
-                    Continue
+                    {hasPassword ? "Continue" : "Delete my account"}
                   </Button>
                   <Button
                     variant="outlined"

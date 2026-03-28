@@ -98,7 +98,7 @@ export function Select({
               left: coords.left,
               width: coords.width,
             }}
-            className="fixed z-[200] bg-surface border border-border rounded-xl overflow-hidden shadow-lg max-h-60 overflow-y-auto"
+            className="fixed z-200 bg-surface border border-border rounded-xl overflow-hidden shadow-lg max-h-60 overflow-y-auto"
           >
             {options.map((opt) => (
               <li key={opt.value}>
