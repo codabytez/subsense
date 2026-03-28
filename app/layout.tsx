@@ -19,6 +19,7 @@ const dmMono = DM_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://subsense.unbuilt.studio"),
   title: {
     default: "Subsense",
     template: "%s | Subsense",
@@ -29,6 +30,7 @@ export const metadata: Metadata = {
     description: "Subscription management, simplified.",
     type: "website",
     siteName: "Subsense",
+    url: "https://subsense.unbuilt.studio",
   },
   twitter: {
     card: "summary_large_image",
