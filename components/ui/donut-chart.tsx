@@ -12,6 +12,7 @@ interface DonutChartProps {
   segments: DonutSegment[];
   centerLabel?: string;
   centerValue?: string;
+  formatValue?: (value: number) => string;
 }
 
 const R = 35;
@@ -21,6 +22,7 @@ export function DonutChart({
   segments,
   centerLabel,
   centerValue,
+  formatValue,
 }: DonutChartProps) {
   const total = segments.reduce((s, seg) => s + seg.value, 0);
 
@@ -100,7 +102,9 @@ export function DonutChart({
               <span className="text-sm text-muted">{seg.label}</span>
             </div>
             <span className="text-sm font-bold text-foreground font-mono">
-              ${seg.value.toFixed(2)}
+              {formatValue
+                ? formatValue(seg.value)
+                : `$${seg.value.toFixed(2)}`}
             </span>
           </li>
         ))}

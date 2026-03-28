@@ -4,6 +4,8 @@ import "./globals.css";
 import { ConvexClientProvider } from "@/providers/convex-provider";
 import { QueryProvider } from "@/providers/query-provider";
 import { ThemeProvider } from "@/providers/theme-provider";
+import { getToken } from "@/lib/auth-server";
+import { Toaster } from "sonner";
 
 // Variable fonts — full weight range loaded automatically
 const syne = Syne({ subsets: ["latin"], variable: "--font-syne" });
@@ -21,22 +23,25 @@ export const metadata: Metadata = {
   description: "Subscription management, simplified.",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const token = await getToken().catch(() => null);
+
   return (
     <html
       lang="en"
       className={`${syne.variable} ${dmSans.variable} ${dmMono.variable}`}
     >
       <body>
-        <ConvexClientProvider>
+        <ConvexClientProvider initialToken={token}>
           <QueryProvider>
             <ThemeProvider>{children}</ThemeProvider>
           </QueryProvider>
         </ConvexClientProvider>
+        <Toaster richColors position="top-right" />
       </body>
     </html>
   );

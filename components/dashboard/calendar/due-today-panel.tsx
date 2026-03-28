@@ -1,36 +1,40 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { TickCircle } from "iconsax-reactjs";
 import type { CalendarEvent } from "./calendar-grid";
 import { PaymentConfirmModal } from "./payment-confirm-modal";
+import { formatAmount } from "@/lib/currency";
 
-const ICON_CONFIG: Record<
-  string,
-  { bg: string; color: string; initials: string }
-> = {
-  "Adobe CC": { bg: "#e8453c", color: "#fff", initials: "Cc" },
-  "X Premium": { bg: "#111113", color: "#fff", initials: "X" },
-  Spotify: { bg: "#1db954", color: "#fff", initials: "S" },
-  Netflix: { bg: "#e50914", color: "#fff", initials: "N" },
-  "GitHub Pro": { bg: "#24292e", color: "#fff", initials: "Gh" },
-  Figma: { bg: "#f24e1e", color: "#fff", initials: "Fi" },
-  Linear: { bg: "#5e6ad2", color: "#fff", initials: "Li" },
-  Notion: { bg: "#ffffff", color: "#111", initials: "No" },
-  "ChatGPT Plus": { bg: "#10a37f", color: "#fff", initials: "Ai" },
-  "iCloud+": { bg: "#3478f6", color: "#fff", initials: "iC" },
-};
+function cycleShort(cycle: string): string {
+  switch (cycle) {
+    case "monthly":
+      return "/mo";
+    case "annual":
+      return "/yr";
+    case "weekly":
+      return "/wk";
+    default:
+      return "";
+  }
+}
 
-function getIcon(name: string) {
-  return (
-    ICON_CONFIG[name] ?? {
-      bg: "#2a2a35",
-      color: "#fff",
-      initials: name.slice(0, 2),
-    }
-  );
+function solidColor(rgba: string): string {
+  const m = rgba.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+  return m ? `rgb(${m[1]},${m[2]},${m[3]})` : "#2a2a35";
+}
+
+function iconFromEvent(event: CalendarEvent) {
+  const bg = solidColor(event.iconColor);
+  const initials = event.name
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0].toUpperCase())
+    .join("");
+  return { bg, color: "#fff", initials };
 }
 
 function getDayLabel(date: Date | null): string {
@@ -52,16 +56,6 @@ function getDayLabel(date: Date | null): string {
   return `Due on ${date.toLocaleDateString("en-US", { month: "short", day: "numeric" })}`;
 }
 
-function isToday(date: Date | null): boolean {
-  if (!date) return false;
-  const today = new Date();
-  return (
-    date.getDate() === today.getDate() &&
-    date.getMonth() === today.getMonth() &&
-    date.getFullYear() === today.getFullYear()
-  );
-}
-
 interface DueTodayPanelProps {
   events: CalendarEvent[];
   date: Date | null;
@@ -69,28 +63,13 @@ interface DueTodayPanelProps {
 
 export function DueTodayPanel({ events, date }: DueTodayPanelProps) {
   const title = getDayLabel(date);
-  const today = isToday(date);
 
-  const autoPaidSubs = useMemo(() => {
-    if (!today) return new Set<string>();
-    return new Set(
-      events.filter((e) => e.paymentMode === "auto").map((e) => e.name)
-    );
-  }, [today, events]);
-
-  const [manuallyPaidSubs, setManuallyPaidSubs] = useState<Set<string>>(
-    new Set()
-  );
+  const [paidIds, setPaidIds] = useState<Set<string>>(new Set());
   const [modalSub, setModalSub] = useState<CalendarEvent | null>(null);
-
-  const paidSubs = useMemo(
-    () => new Set([...autoPaidSubs, ...manuallyPaidSubs]),
-    [autoPaidSubs, manuallyPaidSubs]
-  );
 
   function handleConfirm() {
     if (!modalSub) return;
-    setManuallyPaidSubs((prev) => new Set([...prev, modalSub.name]));
+    setPaidIds((prev) => new Set([...prev, modalSub.id]));
     setModalSub(null);
   }
 
@@ -117,13 +96,13 @@ export function DueTodayPanel({ events, date }: DueTodayPanelProps) {
             </motion.p>
           ) : (
             events.map((item, i) => {
-              const icon = getIcon(item.name);
-              const paid = paidSubs.has(item.name);
+              const icon = iconFromEvent(item);
+              const paid = paidIds.has(item.id);
               const isAuto = item.paymentMode === "auto";
 
               return (
                 <motion.div
-                  key={item.name}
+                  key={item.id}
                   initial={{ opacity: 0, y: 6 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: 6 }}
@@ -134,7 +113,7 @@ export function DueTodayPanel({ events, date }: DueTodayPanelProps) {
                     style={{ opacity: paid ? 0.55 : 1 }}
                   >
                     <Link
-                      href={`/dashboard/subscriptions/${item.name.toLowerCase().replace(/\s+/g, "-")}`}
+                      href={`/dashboard/subscriptions/${item.id}`}
                       className="flex items-center gap-3 p-4 hover:opacity-90 transition-opacity rounded-xl"
                       style={{ backgroundColor: "var(--color-sidebar-active)" }}
                     >
@@ -152,11 +131,12 @@ export function DueTodayPanel({ events, date }: DueTodayPanelProps) {
                           {item.name}
                         </p>
                         <p className="text-xs font-mono text-muted mt-0.5">
-                          ${item.amount.toFixed(2)}/mo
+                          {formatAmount(item.amount, item.currency)}
+                          {cycleShort(item.cycle)}
                         </p>
                       </div>
 
-                      {/* Right — paid or auto badge (non-interactive) */}
+                      {/* Right */}
                       {paid ? (
                         <div className="flex items-center gap-1.5 shrink-0">
                           <TickCircle
@@ -180,7 +160,6 @@ export function DueTodayPanel({ events, date }: DueTodayPanelProps) {
                           Auto-Pay
                         </span>
                       ) : (
-                        /* spacer so link content doesn't overlap the confirm button */
                         <span className="w-16 shrink-0" />
                       )}
                     </Link>

@@ -1,34 +1,11 @@
 "use client";
 
-import { useState } from "react";
-import {
-  MessageQuestion,
-  BookSquare,
-  People,
-  Activity,
-  ExportSquare,
-  Send2,
-} from "iconsax-reactjs";
+import { useState, useEffect } from "react";
+import { MessageQuestion, Send2, TickCircle } from "iconsax-reactjs";
+import { useQuery, useAction } from "convex/react";
+import { api } from "@/convex/_generated/api";
 import { FadeIn } from "@/components/motion";
 import { FaqAccordion } from "@/components/dashboard/support";
-
-const QUICK_LINKS = [
-  {
-    icon: BookSquare,
-    title: "Documentation",
-    description: "Guides, tutorials, and API reference",
-  },
-  {
-    icon: People,
-    title: "Community",
-    description: "Join the SubSense community forum",
-  },
-  {
-    icon: Activity,
-    title: "System Status",
-    description: "Live uptime and incident reports",
-  },
-];
 
 const FAQ = [
   {
@@ -78,12 +55,12 @@ const FAQ = [
       {
         question: "How do I change my email address?",
         answer:
-          "Go to Settings → Profile and update the Email Address field, then hit Save Changes.",
+          "Email changes aren't currently supported in-app as they're tied to your auth provider. Reach out to us via the contact form and we'll help you out.",
       },
       {
         question: "Can I export my subscription data?",
         answer:
-          "Yes — Settings → Data & Privacy gives you CSV and PDF export options for your full subscription history.",
+          "You can export your payment history as a CSV from the Recent Activity section on the dashboard. Full data export options are coming soon.",
       },
     ],
   },
@@ -113,8 +90,42 @@ const SUBJECTS = [
 ];
 
 export function SupportView() {
+  const user = useQuery(api.users.getCurrentUser);
+  const submitRequest = useAction(api.support.submitSupportRequest);
+
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
   const [subject, setSubject] = useState(SUBJECTS[0]);
+  const [message, setMessage] = useState("");
   const [subjectOpen, setSubjectOpen] = useState(false);
+  const [error, setError] = useState("");
+  const [isSending, setIsSending] = useState(false);
+  const [sent, setSent] = useState(false);
+
+  useEffect(() => {
+    if (user) {
+      setName((prev) => prev || user.name);
+      setEmail((prev) => prev || user.email);
+    }
+  }, [user]);
+
+  async function handleSubmit() {
+    if (!message.trim()) {
+      setError("Please describe your issue before sending.");
+      return;
+    }
+    setError("");
+    setIsSending(true);
+    try {
+      await submitRequest({ name, email, subject, message });
+      setSent(true);
+      setMessage("");
+    } catch {
+      setError("Something went wrong. Please try again.");
+    } finally {
+      setIsSending(false);
+    }
+  }
 
   return (
     <FadeIn className="flex flex-col gap-6 pb-10">
@@ -122,33 +133,8 @@ export function SupportView() {
       <div>
         <h1 className="text-3xl font-bold text-foreground">Support Center</h1>
         <p className="text-sm text-muted mt-1">
-          Find answers, get in touch, or browse our resources.
+          Find answers or get in touch with us directly.
         </p>
-      </div>
-
-      {/* Quick links */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        {QUICK_LINKS.map(({ icon: Icon, title, description }) => (
-          <button
-            key={title}
-            className="flex items-start justify-between gap-4 p-5 bg-surface border border-border rounded-2xl hover:border-primary/40 transition-colors duration-200 text-left group"
-          >
-            <div className="flex items-start gap-4">
-              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                <Icon size={18} color="var(--color-primary)" variant="Bold" />
-              </div>
-              <div>
-                <p className="text-sm font-bold text-foreground">{title}</p>
-                <p className="text-xs text-muted mt-0.5">{description}</p>
-              </div>
-            </div>
-            <ExportSquare
-              size={14}
-              color="var(--color-muted)"
-              className="shrink-0 mt-0.5 group-hover:text-primary transition-colors"
-            />
-          </button>
-        ))}
       </div>
 
       {/* FAQ + Contact */}
@@ -187,103 +173,150 @@ export function SupportView() {
             </p>
           </div>
 
-          <div className="flex flex-col gap-4">
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <p className="text-[10px] font-bold tracking-widest uppercase text-muted mb-2">
-                  Name
-                </p>
-                <input
-                  placeholder="Alex Sterling"
-                  className="w-full bg-neutral rounded-xl px-4 py-3 text-sm font-semibold text-foreground placeholder:text-muted/50 outline-none focus:ring-1 focus:ring-primary/40 transition-all"
+          {sent ? (
+            <div className="flex flex-col items-center justify-center gap-4 py-12 text-center">
+              <div
+                className="w-16 h-16 rounded-full flex items-center justify-center"
+                style={{ backgroundColor: "rgba(45,212,191,0.1)" }}
+              >
+                <TickCircle
+                  size={32}
+                  color="var(--color-secondary)"
+                  variant="Bold"
                 />
               </div>
               <div>
-                <p className="text-[10px] font-bold tracking-widest uppercase text-muted mb-2">
-                  Email
+                <p className="text-base font-bold text-foreground">
+                  Message sent
                 </p>
-                <input
-                  type="email"
-                  placeholder="you@example.com"
-                  className="w-full bg-neutral rounded-xl px-4 py-3 text-sm font-semibold text-foreground placeholder:text-muted/50 outline-none focus:ring-1 focus:ring-primary/40 transition-all"
-                />
+                <p className="text-sm text-muted mt-1">
+                  We&apos;ll get back to you at {email}.
+                </p>
               </div>
+              <button
+                onClick={() => setSent(false)}
+                className="text-xs font-bold text-primary hover:opacity-70 transition-opacity mt-2"
+              >
+                Send another message
+              </button>
             </div>
+          ) : (
+            <div className="flex flex-col gap-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <p className="text-[10px] font-bold tracking-widest uppercase text-muted mb-2">
+                    Name
+                  </p>
+                  <input
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="Your name"
+                    disabled={isSending}
+                    className="w-full bg-neutral rounded-xl px-4 py-3 text-sm font-semibold text-foreground placeholder:text-muted/50 outline-none focus:ring-1 focus:ring-primary/40 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  />
+                </div>
+                <div>
+                  <p className="text-[10px] font-bold tracking-widest uppercase text-muted mb-2">
+                    Email
+                  </p>
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="you@example.com"
+                    disabled={isSending}
+                    className="w-full bg-neutral rounded-xl px-4 py-3 text-sm font-semibold text-foreground placeholder:text-muted/50 outline-none focus:ring-1 focus:ring-primary/40 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  />
+                </div>
+              </div>
 
-            <div>
-              <p className="text-[10px] font-bold tracking-widest uppercase text-muted mb-2">
-                Subject
-              </p>
-              <div className="relative">
-                <button
-                  onClick={() => setSubjectOpen((o) => !o)}
-                  className="w-full flex items-center justify-between bg-neutral rounded-xl px-4 py-3 text-sm font-semibold text-foreground outline-none hover:ring-1 hover:ring-primary/40 transition-all"
-                >
-                  {subject}
-                  <svg
-                    width="12"
-                    height="12"
-                    viewBox="0 0 12 12"
-                    fill="none"
-                    style={{
-                      transform: subjectOpen
-                        ? "rotate(180deg)"
-                        : "rotate(0deg)",
-                      transition: "transform 0.2s",
-                    }}
+              <div>
+                <p className="text-[10px] font-bold tracking-widest uppercase text-muted mb-2">
+                  Subject
+                </p>
+                <div className="relative">
+                  <button
+                    onClick={() => setSubjectOpen((o) => !o)}
+                    disabled={isSending}
+                    className="w-full flex items-center justify-between bg-neutral rounded-xl px-4 py-3 text-sm font-semibold text-foreground outline-none hover:ring-1 hover:ring-primary/40 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    <path
-                      d="M2 4L6 8L10 4"
-                      stroke="var(--color-muted)"
-                      strokeWidth="1.5"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                </button>
+                    {subject}
+                    <svg
+                      width="12"
+                      height="12"
+                      viewBox="0 0 12 12"
+                      fill="none"
+                      style={{
+                        transform: subjectOpen
+                          ? "rotate(180deg)"
+                          : "rotate(0deg)",
+                        transition: "transform 0.2s",
+                      }}
+                    >
+                      <path
+                        d="M2 4L6 8L10 4"
+                        stroke="var(--color-muted)"
+                        strokeWidth="1.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  </button>
 
-                {subjectOpen && (
-                  <div className="absolute top-full left-0 right-0 mt-1.5 bg-surface border border-border rounded-xl overflow-hidden shadow-lg z-10">
-                    {SUBJECTS.map((s) => (
-                      <button
-                        key={s}
-                        onClick={() => {
-                          setSubject(s);
-                          setSubjectOpen(false);
-                        }}
-                        className={`w-full text-left px-4 py-2.5 text-sm font-semibold transition-colors duration-150 ${
-                          s === subject
-                            ? "text-primary bg-primary/10"
-                            : "text-muted hover:text-foreground hover:bg-white/5"
-                        }`}
-                      >
-                        {s}
-                      </button>
-                    ))}
-                  </div>
+                  {subjectOpen && (
+                    <div className="absolute top-full left-0 right-0 mt-1.5 bg-surface border border-border rounded-xl overflow-hidden shadow-lg z-10">
+                      {SUBJECTS.map((s) => (
+                        <button
+                          key={s}
+                          onClick={() => {
+                            setSubject(s);
+                            setSubjectOpen(false);
+                          }}
+                          className={`w-full text-left px-4 py-2.5 text-sm font-semibold transition-colors duration-150 ${
+                            s === subject
+                              ? "text-primary bg-primary/10"
+                              : "text-muted hover:text-foreground hover:bg-white/5"
+                          }`}
+                        >
+                          {s}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div>
+                <p className="text-[10px] font-bold tracking-widest uppercase text-muted mb-2">
+                  Message
+                </p>
+                <textarea
+                  rows={6}
+                  value={message}
+                  onChange={(e) => {
+                    setMessage(e.target.value);
+                    if (error) setError("");
+                  }}
+                  placeholder="Describe your issue or question..."
+                  disabled={isSending}
+                  className="w-full bg-neutral rounded-xl px-4 py-3 text-sm font-semibold text-foreground placeholder:text-muted/50 outline-none focus:ring-1 focus:ring-primary/40 transition-all resize-none disabled:opacity-50 disabled:cursor-not-allowed"
+                />
+                {error && (
+                  <p className="text-xs text-tertiary mt-1.5">{error}</p>
                 )}
               </div>
-            </div>
 
-            <div>
-              <p className="text-[10px] font-bold tracking-widest uppercase text-muted mb-2">
-                Message
-              </p>
-              <textarea
-                rows={6}
-                placeholder="Describe your issue or question..."
-                className="w-full bg-neutral rounded-xl px-4 py-3 text-sm font-semibold text-foreground placeholder:text-muted/50 outline-none focus:ring-1 focus:ring-primary/40 transition-all resize-none"
-              />
+              <button
+                onClick={handleSubmit}
+                disabled={isSending}
+                className="w-full py-3.5 rounded-xl text-sm font-black text-white hover:opacity-90 transition-opacity flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                style={{ backgroundColor: "var(--color-primary)" }}
+              >
+                <Send2 size={15} color="currentColor" />
+                {isSending ? "Sending…" : "Send Message"}
+              </button>
             </div>
-
-            <button
-              className="w-full py-3.5 rounded-xl text-sm font-black text-white hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
-              style={{ backgroundColor: "var(--color-primary)" }}
-            >
-              <Send2 size={15} color="currentColor" />
-              Send Message
-            </button>
-          </div>
+          )}
         </div>
       </div>
     </FadeIn>
