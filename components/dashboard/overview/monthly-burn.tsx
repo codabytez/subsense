@@ -64,13 +64,13 @@ export function MonthlyBurn() {
   const decStr = (monthlyTotal % 1).toFixed(2).slice(1); // ".XX" → "XX"
 
   return (
-    <div className="flex flex-col sm:flex-row sm:items-center gap-6">
+    <div className="flex flex-col xl:flex-row xl:items-center gap-6">
       {/* Left */}
       <motion.div
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, ease: "easeOut" }}
-        className="flex flex-col gap-4 flex-1"
+        className="flex flex-col gap-4 flex-1 min-w-0"
       >
         <span className="text-[10px] font-semibold tracking-widest uppercase text-muted">
           Current Monthly Burn
@@ -84,11 +84,11 @@ export function MonthlyBurn() {
         ) : (
           <>
             <div className="flex items-baseline leading-none">
-              <span className="text-[80px] font-bold text-foreground/15 font-mono leading-none">
+              <span className="text-[48px] xl:text-[80px] font-bold text-foreground/15 font-mono leading-none">
                 {symbol}
                 {intStr}
               </span>
-              <span className="text-[80px] font-bold text-primary font-mono leading-none">
+              <span className="text-[48px] xl:text-[80px] font-bold text-primary font-mono leading-none">
                 {decStr}
               </span>
             </div>
@@ -105,16 +105,16 @@ export function MonthlyBurn() {
         initial={{ opacity: 0, x: 16 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ delay: 0.15, duration: 0.4, ease: "easeOut" }}
-        className="bg-surface border border-border rounded-xl p-6 shrink-0"
+        className="bg-surface border border-border rounded-xl p-6 xl:shrink-0"
       >
         {isLoading ? (
-          <div className="animate-pulse flex items-center gap-6">
+          <div className="animate-pulse flex flex-col xl:flex-row items-center gap-4 xl:gap-6">
             <div className="w-35 h-35 rounded-full bg-white/10 shrink-0" />
-            <div className="flex flex-col gap-4 min-w-48">
+            <div className="flex flex-col gap-3 w-full xl:min-w-48">
               {[1, 2, 3].map((i) => (
                 <div
                   key={i}
-                  className="flex items-center justify-between gap-6"
+                  className="flex items-center justify-between gap-4"
                 >
                   <div className="h-3 w-28 bg-white/10 rounded" />
                   <div className="h-3 w-14 bg-white/[0.07] rounded" />

@@ -937,7 +937,7 @@ export function LandingPage() {
               "linear-gradient(90deg, rgba(124,92,252,0.03) 0%, transparent 50%, rgba(45,212,191,0.03) 100%)",
           }}
         />
-        <div className="max-w-6xl mx-auto px-6 py-16 grid grid-cols-3 divide-x divide-border">
+        <div className="max-w-6xl mx-auto px-6 py-10 md:py-16 grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-border">
           {[
             {
               prefix: "$",
@@ -968,9 +968,9 @@ export function LandingPage() {
               whileInView="visible"
               viewport={{ once: true }}
               custom={i}
-              className="flex flex-col items-center gap-2 px-6 py-2"
+              className="flex flex-col items-center gap-2 px-6 py-6 md:py-2"
             >
-              <span className="text-4xl md:text-5xl font-black font-mono text-foreground">
+              <span className="text-5xl font-black font-mono text-foreground whitespace-nowrap">
                 <Counter
                   to={s.to}
                   prefix={s.prefix}

@@ -16,7 +16,7 @@ export function ViewToggle({ view, onChange }: ViewToggleProps) {
       <button
         onClick={() => onChange("grid")}
         className={cn(
-          "flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold tracking-widest uppercase transition-all duration-200",
+          "flex items-center gap-2 px-2 sm:px-3 py-1.5 rounded-lg text-xs font-semibold tracking-widest uppercase transition-all duration-200",
           view === "grid"
             ? "bg-background text-foreground"
             : "text-muted hover:text-foreground"
@@ -27,13 +27,13 @@ export function ViewToggle({ view, onChange }: ViewToggleProps) {
           variant={view === "grid" ? "Bold" : "Outline"}
           color="currentColor"
         />
-        Grid
+        <span className="hidden sm:inline">Grid</span>
       </button>
 
       <button
         onClick={() => onChange("list")}
         className={cn(
-          "flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold tracking-widest uppercase transition-all duration-200",
+          "flex items-center gap-2 px-2 sm:px-3 py-1.5 rounded-lg text-xs font-semibold tracking-widest uppercase transition-all duration-200",
           view === "list"
             ? "bg-background text-foreground"
             : "text-muted hover:text-foreground"
@@ -44,7 +44,7 @@ export function ViewToggle({ view, onChange }: ViewToggleProps) {
           variant={view === "list" ? "Bold" : "Outline"}
           color="currentColor"
         />
-        List
+        <span className="hidden sm:inline">List</span>
       </button>
     </div>
   );

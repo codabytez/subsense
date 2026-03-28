@@ -16,6 +16,8 @@ import {
   Calendar,
   Crown,
   Repeat,
+  MessageQuestion,
+  LogoutCurve,
 } from "iconsax-reactjs";
 import { toast } from "sonner";
 import { FadeIn } from "@/components/motion";
@@ -25,7 +27,9 @@ import { CategoriesSection } from "@/components/dashboard/settings/categories-se
 import { PaymentMethodsSection } from "@/components/dashboard/settings/payment-methods-section";
 import { DeleteAccountModal } from "@/components/dashboard/settings/delete-account-modal";
 import { ChangePasswordModal } from "@/components/dashboard/settings/change-password-modal";
+import { SignOutModal } from "@/components/dashboard/sign-out-modal";
 import Image from "next/image";
+import Link from "next/link";
 import { useTheme, type Theme } from "@/providers/theme-provider";
 import { api } from "@/convex/_generated/api";
 import { cn } from "@/lib/utils";
@@ -182,6 +186,7 @@ export function SettingsView() {
   >(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showChangePassword, setShowChangePassword] = useState(false);
+  const [showSignOut, setShowSignOut] = useState(false);
   const [showPicker, setShowPicker] = useState(false);
   const [pickerOptions, setPickerOptions] = useState<
     { style: string; seed: string }[]
@@ -282,16 +287,16 @@ export function SettingsView() {
     <>
       <FadeIn className="flex flex-col gap-6 pb-5">
         {/* Header */}
-        <div className="flex items-start justify-between gap-6">
+        <div className="flex items-start justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-foreground">
+            <h1 className="text-2xl sm:text-3xl font-bold text-foreground">
               Account Settings
             </h1>
             <p className="text-sm text-muted mt-1">
               Manage your subscription ecosystem and security vault.
             </p>
           </div>
-          <div className="flex items-center gap-3 shrink-0 bg-neutral rounded-2xl overflow-hidden pr-5">
+          <div className="hidden sm:flex items-center gap-3 shrink-0 bg-neutral rounded-2xl overflow-hidden pr-5">
             <div className="relative w-14 h-14 bg-primary flex items-center justify-center shrink-0 overflow-hidden">
               {avatar ? (
                 <Image
@@ -322,9 +327,9 @@ export function SettingsView() {
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-5">
           {/* Profile */}
           <div className="bg-surface border border-border rounded-2xl p-6 flex flex-col gap-5">
-            <div className="flex items-center gap-6">
-              <div className="relative shrink-0">
-                <div className="relative w-24 h-24 rounded-full ring-2 flex items-center justify-center text-2xl font-black text-white overflow-hidden bg-primary ring-border">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-5 sm:gap-6">
+              <div className="relative shrink-0 self-center sm:self-auto">
+                <div className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-full ring-2 flex items-center justify-center text-2xl font-black text-white overflow-hidden bg-primary ring-border">
                   {avatar ? (
                     <Image
                       src={avatar}
@@ -347,7 +352,7 @@ export function SettingsView() {
                   <Edit2 size={13} color="#fff" />
                 </button>
               </div>
-              <div className="flex-1 grid grid-cols-2 gap-3">
+              <div className="flex-1 w-full grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <p className="text-[10px] font-bold tracking-widest uppercase text-muted mb-2">
                     Full Name
@@ -378,14 +383,19 @@ export function SettingsView() {
             </div>
 
             {/* Profile stats row */}
-            <div className="grid grid-cols-3 gap-3 pt-1">
-              <div className="flex items-center gap-3 bg-neutral rounded-xl px-4 py-3">
-                <Calendar size={16} color="var(--color-muted)" variant="Bold" />
-                <div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 pt-1">
+              <div className="flex items-center gap-2 sm:gap-3 bg-neutral rounded-xl px-3 sm:px-4 py-3">
+                <Calendar
+                  size={16}
+                  color="var(--color-muted)"
+                  variant="Bold"
+                  className="shrink-0"
+                />
+                <div className="min-w-0">
                   <p className="text-[9px] font-bold tracking-widest uppercase text-muted">
                     Member Since
                   </p>
-                  <p className="text-sm font-bold text-foreground">
+                  <p className="text-sm font-bold text-foreground whitespace-nowrap">
                     {user?._creationTime
                       ? new Date(user._creationTime).toLocaleDateString(
                           "en-US",
@@ -398,8 +408,13 @@ export function SettingsView() {
                   </p>
                 </div>
               </div>
-              <div className="flex items-center gap-3 bg-neutral rounded-xl px-4 py-3">
-                <Crown size={16} color="var(--color-primary)" variant="Bold" />
+              <div className="hidden sm:flex items-center gap-2 sm:gap-3 bg-neutral rounded-xl px-3 sm:px-4 py-3">
+                <Crown
+                  size={16}
+                  color="var(--color-primary)"
+                  variant="Bold"
+                  className="shrink-0"
+                />
                 <div>
                   <p className="text-[9px] font-bold tracking-widest uppercase text-muted">
                     Plan
@@ -407,11 +422,12 @@ export function SettingsView() {
                   <p className="text-sm font-bold text-foreground">Free</p>
                 </div>
               </div>
-              <div className="flex items-center gap-3 bg-neutral rounded-xl px-4 py-3">
+              <div className="flex items-center gap-2 sm:gap-3 bg-neutral rounded-xl px-3 sm:px-4 py-3">
                 <Repeat
                   size={16}
                   color="var(--color-secondary)"
                   variant="Bold"
+                  className="shrink-0"
                 />
                 <div>
                   <p className="text-[9px] font-bold tracking-widest uppercase text-muted">
@@ -583,6 +599,36 @@ export function SettingsView() {
 
         {/* Row 3: Payment Methods */}
         <PaymentMethodsSection />
+
+        {/* Mobile-only: Support + Sign Out */}
+        <div className="flex flex-col gap-2 md:hidden">
+          <Link
+            href="/dashboard/support"
+            className="flex items-center gap-3 px-4 py-4 rounded-xl bg-surface border border-border hover:opacity-80 transition-opacity"
+          >
+            <MessageQuestion
+              size={20}
+              color="var(--color-muted)"
+              variant="Outline"
+            />
+            <span className="text-sm font-semibold text-foreground">
+              Support
+            </span>
+          </Link>
+          <button
+            onClick={() => setShowSignOut(true)}
+            className="flex items-center gap-3 px-4 py-4 rounded-xl bg-surface border border-border hover:opacity-80 transition-opacity w-full"
+          >
+            <LogoutCurve
+              size={20}
+              color="var(--color-muted)"
+              variant="Outline"
+            />
+            <span className="text-sm font-semibold text-foreground">
+              Sign Out
+            </span>
+          </button>
+        </div>
       </FadeIn>
 
       <DeleteAccountModal
@@ -594,6 +640,8 @@ export function SettingsView() {
         open={showChangePassword}
         onClose={() => setShowChangePassword(false)}
       />
+
+      <SignOutModal open={showSignOut} onClose={() => setShowSignOut(false)} />
 
       {/* Avatar picker */}
       <AnimatePresence>

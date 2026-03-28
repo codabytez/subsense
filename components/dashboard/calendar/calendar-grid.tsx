@@ -415,8 +415,8 @@ function WeekView({
                     boxShadow: `0 2px 8px ${withAlpha(e.dotColor, 0.15)}`,
                   }}
                 >
-                  <p className="uppercase tracking-widest">{e.name}</p>
-                  <p className="font-mono mt-0.5 opacity-80">
+                  <p className="uppercase tracking-widest truncate">{e.name}</p>
+                  <p className="font-mono mt-0.5 opacity-80 truncate">
                     {formatAmount(e.amount, e.currency)}
                   </p>
                 </div>

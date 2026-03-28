@@ -19,6 +19,7 @@ import { api } from "@/convex/_generated/api";
 import type { Doc } from "@/convex/_generated/dataModel";
 import { formatDistanceToNow } from "date-fns";
 import { cn } from "@/lib/utils";
+import { formatAmount } from "@/lib/currency";
 
 function initials(name: string) {
   return name
@@ -98,16 +99,139 @@ function NotificationItem({
   );
 }
 
+type SearchResult = {
+  _id: string;
+  name: string;
+  category: string;
+  amount: number;
+  currency: string;
+  status: string;
+};
+
+function SearchDropdown({
+  results,
+  cursor,
+  onSelect,
+  router,
+}: {
+  results: SearchResult[];
+  cursor: number;
+  onSelect: () => void;
+  router: ReturnType<typeof useRouter>;
+}) {
+  if (results.length === 0) return null;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 6 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: 6 }}
+      transition={{ duration: 0.15, ease: "easeOut" }}
+      className="absolute top-full mt-2 left-0 right-0 bg-surface border border-border rounded-2xl shadow-2xl overflow-hidden z-50"
+    >
+      {results.map((s, i) => (
+        <button
+          key={s._id}
+          onClick={() => {
+            router.push(`/dashboard/subscriptions/${s._id}`);
+            onSelect();
+          }}
+          className={cn(
+            "w-full flex items-center gap-3 px-4 py-3 text-left transition-colors",
+            i === cursor ? "bg-primary/10" : "hover:bg-white/5"
+          )}
+        >
+          <div
+            className="w-8 h-8 rounded-xl shrink-0 flex items-center justify-center text-[11px] font-black text-white"
+            style={{ backgroundColor: "var(--color-primary)" }}
+          >
+            {s.name.slice(0, 2).toUpperCase()}
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-foreground truncate">
+              {s.name}
+            </p>
+            <p className="text-[11px] text-muted truncate">{s.category}</p>
+          </div>
+          <div className="text-right shrink-0">
+            <p className="text-sm font-bold font-mono text-foreground">
+              {formatAmount(s.amount, s.currency)}
+            </p>
+            <p
+              className={cn(
+                "text-[10px] font-semibold uppercase tracking-wide",
+                s.status === "active" ? "text-secondary" : "text-muted"
+              )}
+            >
+              {s.status}
+            </p>
+          </div>
+        </button>
+      ))}
+    </motion.div>
+  );
+}
+
 export default function Header() {
   const pathname = usePathname();
+  const router = useRouter();
   const user = useQuery(api.users.getCurrentUser);
   const notifications = useQuery(api.inbox.getNotifications);
   const unreadCount = useQuery(api.inbox.getUnreadCount);
   const markAsRead = useMutation(api.inbox.markAsRead);
   const markAllAsRead = useMutation(api.inbox.markAllAsRead);
 
+  const subscriptions = useQuery(api.subscriptions.getSubscriptions);
+
   const [open, setOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchCursor, setSearchCursor] = useState(-1);
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const searchResults =
+    searchQuery.trim().length < 1
+      ? []
+      : (subscriptions ?? [])
+          .filter((s) => {
+            const q = searchQuery.toLowerCase();
+            return (
+              s.name.toLowerCase().includes(q) ||
+              s.category.toLowerCase().includes(q) ||
+              (s.plan ?? "").toLowerCase().includes(q)
+            );
+          })
+          .slice(0, 6);
+
+  function closeSearch() {
+    setSearchOpen(false);
+    setSearchQuery("");
+    setSearchCursor(-1);
+  }
+
+  function handleSearchKey(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key === "Escape") {
+      closeSearch();
+      return;
+    }
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setSearchCursor((c) => Math.min(c + 1, searchResults.length - 1));
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setSearchCursor((c) => Math.max(c - 1, 0));
+    } else if (
+      e.key === "Enter" &&
+      searchCursor >= 0 &&
+      searchResults[searchCursor]
+    ) {
+      router.push(
+        `/dashboard/subscriptions/${searchResults[searchCursor]._id}`
+      );
+      closeSearch();
+    }
+  }
 
   // Close on outside click
   useEffect(() => {
@@ -128,28 +252,139 @@ export default function Header() {
   const hasUnread = (unreadCount ?? 0) > 0;
 
   return (
-    <header className="flex items-center justify-between px-6 h-16 border-b border-border">
-      {/* Search */}
+    <header className="flex items-center justify-between px-4 md:px-6 h-16 border-b border-border">
+      {/* Search — hidden on mobile */}
       <motion.div
         initial={{ opacity: 0, y: -6 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3 }}
-        className="flex items-center gap-3 bg-surface rounded-full px-4 py-2.5 w-full max-w-sm"
+        className="hidden md:block relative w-full max-w-sm"
       >
-        <SearchNormal1 size={16} color="var(--color-muted)" variant="Outline" />
-        <input
-          type="text"
-          placeholder="Search subscriptions..."
-          className="bg-transparent text-sm text-foreground placeholder:text-muted outline-none w-full"
-        />
+        <div className="flex items-center gap-3 bg-surface rounded-full px-4 py-2.5">
+          <SearchNormal1
+            size={16}
+            color="var(--color-muted)"
+            variant="Outline"
+          />
+          <input
+            type="text"
+            placeholder="Search subscriptions..."
+            value={searchQuery}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              setSearchCursor(-1);
+            }}
+            onKeyDown={handleSearchKey}
+            className="bg-transparent text-sm text-foreground placeholder:text-muted outline-none w-full"
+          />
+          {searchQuery && (
+            <button
+              onClick={() => {
+                setSearchQuery("");
+                setSearchCursor(-1);
+              }}
+              className="text-muted hover:text-foreground text-lg leading-none"
+            >
+              ×
+            </button>
+          )}
+        </div>
+        <AnimatePresence>
+          {searchResults.length > 0 && (
+            <SearchDropdown
+              results={searchResults}
+              cursor={searchCursor}
+              onSelect={closeSearch}
+              router={router}
+            />
+          )}
+        </AnimatePresence>
       </motion.div>
+
+      {/* Mobile: brand + expandable search */}
+      <div className="flex md:hidden items-center gap-2 flex-1 mr-3">
+        <AnimatePresence mode="wait">
+          {searchOpen ? (
+            <motion.div
+              key="search-open"
+              initial={{ opacity: 0, width: 0 }}
+              animate={{ opacity: 1, width: "100%" }}
+              exit={{ opacity: 0, width: 0 }}
+              transition={{ duration: 0.2, ease: "easeOut" }}
+              className="relative w-full"
+            >
+              <div className="flex items-center gap-2 bg-surface rounded-full px-4 py-2 w-full">
+                <SearchNormal1
+                  size={15}
+                  color="var(--color-muted)"
+                  variant="Outline"
+                />
+                <input
+                  ref={searchInputRef}
+                  type="text"
+                  placeholder="Search subscriptions..."
+                  value={searchQuery}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                    setSearchCursor(-1);
+                  }}
+                  onKeyDown={handleSearchKey}
+                  className="bg-transparent text-sm text-foreground placeholder:text-muted outline-none flex-1"
+                />
+                <button
+                  onClick={closeSearch}
+                  className="text-muted hover:text-foreground transition-colors text-lg leading-none"
+                >
+                  ×
+                </button>
+              </div>
+              <AnimatePresence>
+                {searchResults.length > 0 && (
+                  <SearchDropdown
+                    results={searchResults}
+                    cursor={searchCursor}
+                    onSelect={closeSearch}
+                    router={router}
+                  />
+                )}
+              </AnimatePresence>
+            </motion.div>
+          ) : (
+            <motion.div
+              key="search-closed"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.15 }}
+              className="flex items-center gap-3"
+            >
+              <span className="text-sm font-bold tracking-widest uppercase text-primary font-display">
+                Subsense
+              </span>
+              <button
+                onClick={() => {
+                  setSearchOpen(true);
+                  setTimeout(() => searchInputRef.current?.focus(), 50);
+                }}
+                className="text-muted hover:text-foreground transition-colors"
+              >
+                <SearchNormal1
+                  size={18}
+                  variant="Outline"
+                  color="currentColor"
+                />
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
 
       {/* Right side */}
       <motion.div
         initial={{ opacity: 0, y: -6 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3, delay: 0.1 }}
-        className="flex items-center gap-4"
+        className="flex items-center gap-3 md:gap-4 shrink-0"
       >
         {/* Notification bell */}
         <div className="relative" ref={dropdownRef}>
@@ -174,7 +409,7 @@ export default function Header() {
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95, y: 6 }}
                 transition={{ duration: 0.15, ease: "easeOut" }}
-                className="absolute right-0 top-10 w-80 bg-surface border border-border rounded-2xl shadow-2xl overflow-hidden z-50"
+                className="absolute right-0 top-10 w-[calc(100vw-2rem)] max-w-80 bg-surface border border-border rounded-2xl shadow-2xl overflow-hidden z-50"
               >
                 {/* Header */}
                 <div className="flex items-center justify-between px-4 py-3 border-b border-border">
@@ -234,7 +469,7 @@ export default function Header() {
         </div>
 
         {/* Divider */}
-        <div className="w-px h-5 bg-border" />
+        <div className="hidden md:block w-px h-5 bg-border" />
 
         {/* User */}
         {user === undefined ? (
@@ -247,7 +482,7 @@ export default function Header() {
             href="/dashboard/settings"
             className="flex items-center gap-2.5 hover:opacity-80 transition-opacity"
           >
-            <span className="text-sm font-semibold tracking-widest text-foreground font-display uppercase truncate max-w-32">
+            <span className="hidden md:block text-sm font-semibold tracking-widest text-foreground font-display uppercase truncate max-w-32">
               {user?.name ?? "—"}
             </span>
             <div className="relative w-8 h-8 rounded-full overflow-hidden bg-primary shrink-0 flex items-center justify-center">
