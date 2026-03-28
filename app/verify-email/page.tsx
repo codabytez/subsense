@@ -39,7 +39,7 @@ function VerifyEmailContent() {
 
     const { error } = await authClient.sendVerificationEmail({
       email,
-      callbackURL: `${window.location.origin}/dashboard`,
+      callbackURL: `${window.location.origin}/onboarding`,
     });
 
     setIsResending(false);

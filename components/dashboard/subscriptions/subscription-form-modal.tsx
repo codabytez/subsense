@@ -11,6 +11,8 @@ import { Select, SelectOption } from "@/components/ui/select";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { DEFAULT_CATEGORIES } from "@/lib/default-categories";
+import { getCurrencySymbol } from "@/lib/currency";
+import { DatePicker } from "@/components/ui/date-picker";
 
 // ── Types ─────────────────────────────────────────────────────
 type BillingCycle =
@@ -181,6 +183,10 @@ export function SubscriptionFormModal({
   const user = useQuery(api.users.getCurrentUser);
   const customCategories = useQuery(api.categories.getCategories);
   const paymentMethods = useQuery(api.paymentMethods.getPaymentMethods);
+  const editSub = useQuery(
+    api.subscriptions.getSubscriptionById,
+    editId ? { id: editId } : "skip"
+  );
 
   const createSubscription = useMutation(api.subscriptions.createSubscription);
   const updateSubscription = useMutation(api.subscriptions.updateSubscription);
@@ -189,6 +195,7 @@ export function SubscriptionFormModal({
   const [form, setForm] = useState<SubscriptionFormData>(DEFAULT_FORM);
   const [isSaving, setIsSaving] = useState(false);
   const pmInitialized = useRef(false);
+  const editInitialized = useRef<string | undefined>(undefined);
 
   // Set currency symbol from user preference
   const currencyCode = user?.currency ?? "USD";
@@ -205,14 +212,42 @@ export function SubscriptionFormModal({
     dot: c.color,
   }));
 
-  // Pre-select default payment method once when list first loads
+  // Pre-fill form when editing — run once per editId
   useEffect(() => {
-    if (paymentMethods && !pmInitialized.current) {
+    if (editSub && editId && editInitialized.current !== editId) {
+      editInitialized.current = editId;
+      setForm({
+        name: editSub.name,
+        plan: editSub.plan ?? "",
+        amount: String(editSub.amount),
+        amountApprox: editSub.amountApprox,
+        cycle: editSub.cycle,
+        customInterval: editSub.customInterval ?? "3_Months",
+        nextPaymentDate: editSub.nextPaymentDate,
+        category: editSub.category,
+        paymentMethodId: editSub.paymentMethodId ?? "none",
+        paymentMode: editSub.paymentMode,
+        remindersEnabled: editSub.remindersEnabled,
+        reminderIntervals: editSub.reminderIntervals,
+        status: editSub.status,
+        notes: editSub.notes ?? "",
+      });
+    }
+    // Reset when modal closes
+    if (!open) {
+      editInitialized.current = undefined;
+      pmInitialized.current = false;
+    }
+  }, [editSub, editId, open]);
+
+  // Pre-select default payment method once when list first loads (new sub only)
+  useEffect(() => {
+    if (paymentMethods && !pmInitialized.current && !isEdit) {
       pmInitialized.current = true;
       const def = paymentMethods.find((m) => m.isDefault);
       if (def) setForm((f) => ({ ...f, paymentMethodId: def._id }));
     }
-  }, [paymentMethods]);
+  }, [paymentMethods, isEdit]);
 
   function set<K extends keyof SubscriptionFormData>(
     key: K,
@@ -243,7 +278,7 @@ export function SubscriptionFormModal({
       plan: form.plan.trim() || undefined,
       amount: parseFloat(form.amount),
       amountApprox: form.amountApprox,
-      currency: user?.currency ?? "USD ($) — United States Dollar",
+      currency: user?.currency ?? "USD",
       cycle: form.cycle,
       customInterval: form.cycle === "custom" ? form.customInterval : undefined,
       nextPaymentDate: form.nextPaymentDate,
@@ -376,10 +411,15 @@ export function SubscriptionFormModal({
                   <FieldLabel>Amount</FieldLabel>
                   <div className="relative">
                     <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm text-muted pointer-events-none">
-                      {form.amountApprox ? `~${currencyCode}` : currencyCode}
+                      {form.amountApprox
+                        ? `~${getCurrencySymbol(currencyCode)}`
+                        : getCurrencySymbol(currencyCode)}
                     </span>
                     <input
-                      className={cn(inputCls, "pl-12")}
+                      className={inputCls}
+                      style={{
+                        paddingLeft: `${1 + (getCurrencySymbol(currencyCode).length + (form.amountApprox ? 1 : 0)) * 0.6}rem`,
+                      }}
                       type="text"
                       inputMode="decimal"
                       placeholder="0.00"
@@ -465,11 +505,9 @@ export function SubscriptionFormModal({
                 <SectionLabel>Schedule</SectionLabel>
                 <div className="flex flex-col gap-1.5">
                   <FieldLabel>Next Payment Date</FieldLabel>
-                  <input
-                    className={inputCls}
-                    type="date"
+                  <DatePicker
                     value={form.nextPaymentDate}
-                    onChange={(e) => set("nextPaymentDate", e.target.value)}
+                    onChange={(v) => set("nextPaymentDate", v)}
                   />
                 </div>
               </section>

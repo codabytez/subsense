@@ -187,34 +187,44 @@ export function Sidebar() {
           </button>
 
           {/* User profile strip */}
-          <Link
-            href="/dashboard/settings"
-            className="flex items-center gap-3 mt-2 px-3 py-2.5 rounded-xl hover:bg-white/3 transition-colors duration-200 group"
-          >
-            <div className="relative w-8 h-8 rounded-full overflow-hidden bg-primary shrink-0 flex items-center justify-center">
-              {user?.avatarUrl ? (
-                <Image
-                  src={user.avatarUrl}
-                  alt="avatar"
-                  fill
-                  className="object-cover"
-                  unoptimized
-                />
-              ) : (
-                <span className="text-[11px] font-black text-white">
-                  {user?.name ? initials(user.name) : "—"}
+          {user === undefined ? (
+            <div className="flex items-center gap-3 mt-2 px-3 py-2.5 rounded-xl animate-pulse">
+              <div className="w-8 h-8 rounded-full bg-white/10 shrink-0" />
+              <div className="flex flex-col gap-1.5 flex-1 min-w-0">
+                <div className="h-3 w-24 bg-white/10 rounded" />
+                <div className="h-2.5 w-32 bg-white/[0.07] rounded" />
+              </div>
+            </div>
+          ) : (
+            <Link
+              href="/dashboard/settings"
+              className="flex items-center gap-3 mt-2 px-3 py-2.5 rounded-xl hover:bg-white/3 transition-colors duration-200 group"
+            >
+              <div className="relative w-8 h-8 rounded-full overflow-hidden bg-primary shrink-0 flex items-center justify-center">
+                {user?.avatarUrl ? (
+                  <Image
+                    src={user.avatarUrl}
+                    alt="avatar"
+                    fill
+                    className="object-cover"
+                    unoptimized
+                  />
+                ) : (
+                  <span className="text-[11px] font-black text-white">
+                    {user?.name ? initials(user.name) : "—"}
+                  </span>
+                )}
+              </div>
+              <div className="flex flex-col min-w-0">
+                <span className="text-xs font-bold text-foreground truncate leading-none">
+                  {user?.name ?? "—"}
                 </span>
-              )}
-            </div>
-            <div className="flex flex-col min-w-0">
-              <span className="text-xs font-bold text-foreground truncate leading-none">
-                {user?.name ?? "—"}
-              </span>
-              <span className="text-[10px] text-muted mt-0.5 truncate">
-                {user?.email ?? ""}
-              </span>
-            </div>
-          </Link>
+                <span className="text-[10px] text-muted mt-0.5 truncate">
+                  {user?.email ?? ""}
+                </span>
+              </div>
+            </Link>
+          )}
         </motion.div>
       </motion.aside>
 

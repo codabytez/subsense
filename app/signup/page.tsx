@@ -42,6 +42,7 @@ export default function SignupPage() {
       name: values.name,
       email: values.email,
       password: values.password,
+      callbackURL: "/onboarding",
     });
 
     if (error) {

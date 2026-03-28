@@ -13,6 +13,9 @@ import {
   Sun,
   Monitor,
   Setting2,
+  Calendar,
+  Crown,
+  Repeat,
 } from "iconsax-reactjs";
 import { toast } from "sonner";
 import { FadeIn } from "@/components/motion";
@@ -21,6 +24,7 @@ import { Section, Toggle } from "@/components/dashboard/settings";
 import { CategoriesSection } from "@/components/dashboard/settings/categories-section";
 import { PaymentMethodsSection } from "@/components/dashboard/settings/payment-methods-section";
 import { DeleteAccountModal } from "@/components/dashboard/settings/delete-account-modal";
+import { ChangePasswordModal } from "@/components/dashboard/settings/change-password-modal";
 import Image from "next/image";
 import { useTheme, type Theme } from "@/providers/theme-provider";
 import { api } from "@/convex/_generated/api";
@@ -177,6 +181,7 @@ export function SettingsView() {
     "push" | "digest" | "price" | null
   >(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showChangePassword, setShowChangePassword] = useState(false);
   const [showPicker, setShowPicker] = useState(false);
   const [pickerOptions, setPickerOptions] = useState<
     { style: string; seed: string }[]
@@ -353,7 +358,7 @@ export function SettingsView() {
                     className="w-full bg-neutral rounded-lg px-4 py-3 text-base font-semibold text-foreground outline-none focus:ring-1 focus:ring-primary/40 transition-all"
                   />
                 </div>
-                <div>
+                <div className="flex flex-col gap-2">
                   <p className="text-[10px] font-bold tracking-widest uppercase text-muted mb-2">
                     Email Address
                   </p>
@@ -362,6 +367,62 @@ export function SettingsView() {
                     readOnly
                     className="w-full bg-neutral rounded-lg px-4 py-3 text-base font-semibold text-muted outline-none cursor-not-allowed select-none"
                   />
+                  <button
+                    onClick={() => setShowChangePassword(true)}
+                    className="text-xs font-bold text-primary hover:opacity-70 transition-opacity text-left"
+                  >
+                    Change Password
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Profile stats row */}
+            <div className="grid grid-cols-3 gap-3 pt-1">
+              <div className="flex items-center gap-3 bg-neutral rounded-xl px-4 py-3">
+                <Calendar size={16} color="var(--color-muted)" variant="Bold" />
+                <div>
+                  <p className="text-[9px] font-bold tracking-widest uppercase text-muted">
+                    Member Since
+                  </p>
+                  <p className="text-sm font-bold text-foreground">
+                    {user?._creationTime
+                      ? new Date(user._creationTime).toLocaleDateString(
+                          "en-US",
+                          {
+                            month: "short",
+                            year: "numeric",
+                          }
+                        )
+                      : "—"}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 bg-neutral rounded-xl px-4 py-3">
+                <Crown size={16} color="var(--color-primary)" variant="Bold" />
+                <div>
+                  <p className="text-[9px] font-bold tracking-widest uppercase text-muted">
+                    Plan
+                  </p>
+                  <p className="text-sm font-bold text-foreground">Free</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 bg-neutral rounded-xl px-4 py-3">
+                <Repeat
+                  size={16}
+                  color="var(--color-secondary)"
+                  variant="Bold"
+                />
+                <div>
+                  <p className="text-[9px] font-bold tracking-widest uppercase text-muted">
+                    Active Subs
+                  </p>
+                  <p className="text-sm font-bold text-foreground">
+                    {
+                      (rawSubs ?? []).filter((s) => s.status === "active")
+                        .length
+                    }
+                  </p>
                 </div>
               </div>
             </div>
@@ -523,6 +584,11 @@ export function SettingsView() {
       <DeleteAccountModal
         open={showDeleteModal}
         onClose={() => setShowDeleteModal(false)}
+      />
+
+      <ChangePasswordModal
+        open={showChangePassword}
+        onClose={() => setShowChangePassword(false)}
       />
 
       {/* Avatar picker */}

@@ -1,7 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
+import { useQuery } from "convex/react";
+import { api } from "@/convex/_generated/api";
+import type { Doc } from "@/convex/_generated/dataModel";
 import { FadeIn } from "@/components/motion";
 import { cn } from "@/lib/utils";
 import {
@@ -11,24 +14,66 @@ import {
   WeeklyCashFlow,
 } from "@/components/dashboard/calendar";
 import {
-  EVENTS,
   type CalendarView,
   type CalendarEvent,
+  toDateKey,
 } from "@/components/dashboard/calendar/calendar-grid";
 
 const VIEWS: CalendarView[] = ["Week", "Month", "Year"];
 
+function solidColor(rgba: string): string {
+  const m = rgba.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+  return m ? `rgb(${m[1]},${m[2]},${m[3]})` : "#7c5cfc";
+}
+
+function buildEventsMap(
+  subs: Doc<"subscriptions">[]
+): Record<string, CalendarEvent[]> {
+  const map: Record<string, CalendarEvent[]> = {};
+  for (const sub of subs) {
+    if (sub.status === "cancelled" || sub.status === "paused") continue;
+    if (!sub.nextPaymentDate) continue;
+    const key = sub.nextPaymentDate; // already "YYYY-MM-DD"
+    if (!map[key]) map[key] = [];
+    map[key].push({
+      id: sub._id,
+      name: sub.name,
+      dotColor: solidColor(sub.iconColor),
+      amount: sub.amount,
+      currency: sub.currency,
+      cycle: sub.cycle,
+      paymentMode: sub.paymentMode,
+      iconColor: sub.iconColor,
+      paymentMethodId: sub.paymentMethodId,
+      notes: sub.notes,
+    });
+  }
+  return map;
+}
+
 export function CalendarView() {
   const [view, setView] = useState<CalendarView>("Month");
   const [selectedDate, setSelectedDate] = useState<Date | null>(new Date());
-  const [selectedEvents, setSelectedEvents] = useState<CalendarEvent[]>(
-    () => EVENTS[new Date().getDate()] ?? []
-  );
 
-  function handleDaySelect(date: Date, events: CalendarEvent[]) {
-    setSelectedDate(date);
-    setSelectedEvents(events);
-  }
+  const subs = useQuery(api.subscriptions.getSubscriptions);
+  const user = useQuery(api.users.getCurrentUser);
+
+  const eventsMap = useMemo(() => {
+    if (!subs) return {};
+    return buildEventsMap(subs);
+  }, [subs]);
+
+  const selectedEvents = useMemo((): CalendarEvent[] => {
+    if (!selectedDate) return [];
+    const key = toDateKey(
+      selectedDate.getFullYear(),
+      selectedDate.getMonth(),
+      selectedDate.getDate()
+    );
+    return eventsMap[key] ?? [];
+  }, [selectedDate, eventsMap]);
+
+  const userCurrency = user?.currency ?? "USD";
 
   return (
     <FadeIn className="flex flex-col gap-6">
@@ -73,16 +118,20 @@ export function CalendarView() {
 
       {/* Main layout: calendar + right panel */}
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-5">
-        <CalendarGrid view={view} onDaySelect={handleDaySelect} />
+        <CalendarGrid
+          view={view}
+          eventsMap={eventsMap}
+          onDaySelect={setSelectedDate}
+        />
 
         <div className="flex flex-col gap-4">
           <DueTodayPanel events={selectedEvents} date={selectedDate} />
-          <ProjectionCard />
+          <ProjectionCard subs={subs} userCurrency={userCurrency} />
         </div>
       </div>
 
       {/* Weekly cash flow */}
-      <WeeklyCashFlow />
+      <WeeklyCashFlow subs={subs} />
     </FadeIn>
   );
 }

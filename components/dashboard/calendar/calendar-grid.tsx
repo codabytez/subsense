@@ -4,6 +4,7 @@ import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowLeft2, ArrowRight2 } from "iconsax-reactjs";
 import { cn } from "@/lib/utils";
+import { formatAmount } from "@/lib/currency";
 
 export type CalendarView = "Week" | "Month" | "Year";
 
@@ -39,73 +40,29 @@ const MONTH_SHORT = [
   "Dec",
 ];
 
-// Use raw hex values — CSS vars don't work inside color-mix()
-const PRIMARY = "#7c5cfc";
-const SECONDARY = "#2dd4bf";
-const TERTIARY = "#f97066";
+export interface CalendarEvent {
+  id: string;
+  name: string;
+  dotColor: string;
+  amount: number;
+  currency: string;
+  cycle: string;
+  paymentMode: "auto" | "manual";
+  iconColor: string;
+  paymentMethodId?: string;
+  notes?: string;
+}
 
-export const EVENTS: Record<number, CalendarEvent[]> = {
-  3: [
-    { name: "Spotify", dotColor: PRIMARY, amount: 9.99, paymentMode: "auto" },
-  ],
-  6: [
-    {
-      name: "Netflix",
-      dotColor: SECONDARY,
-      amount: 15.99,
-      paymentMode: "auto",
-    },
-  ],
-  12: [
-    {
-      name: "Adobe CC",
-      dotColor: PRIMARY,
-      amount: 52.99,
-      paymentMode: "manual",
-    },
-    {
-      name: "GitHub Pro copilot pro max",
-      dotColor: SECONDARY,
-      amount: 4.0,
-      paymentMode: "auto",
-    },
-    { name: "Figma", dotColor: TERTIARY, amount: 15.0, paymentMode: "manual" },
-    {
-      name: "X Premium",
-      dotColor: "#111113",
-      amount: 20.0,
-      paymentMode: "manual",
-    },
-  ],
-  15: [
-    {
-      name: "GitHub Pro copilot",
-      dotColor: PRIMARY,
-      amount: 4.0,
-      paymentMode: "auto",
-    },
-  ],
-  18: [
-    { name: "Linear", dotColor: TERTIARY, amount: 8.0, paymentMode: "manual" },
-    {
-      name: "Notion",
-      dotColor: SECONDARY,
-      amount: 10.0,
-      paymentMode: "manual",
-    },
-  ],
-  21: [
-    {
-      name: "ChatGPT Plus",
-      dotColor: SECONDARY,
-      amount: 20.0,
-      paymentMode: "manual",
-    },
-  ],
-  25: [
-    { name: "iCloud+", dotColor: PRIMARY, amount: 9.99, paymentMode: "auto" },
-  ],
-};
+/** Converts an rgb() string to rgba() with the given alpha (0–1). */
+function withAlpha(rgb: string, alpha: number): string {
+  const m = rgb.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
+  return m ? `rgba(${m[1]},${m[2]},${m[3]},${alpha})` : rgb;
+}
+
+/** Returns a "YYYY-MM-DD" key from year/month(0-indexed)/day. Safe for local timezone. */
+export function toDateKey(year: number, month: number, day: number): string {
+  return `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+}
 
 function getCalendarDays(year: number, month: number) {
   const rawFirstDay = new Date(year, month, 1).getDay();
@@ -126,7 +83,6 @@ function getCalendarDays(year: number, month: number) {
   return days;
 }
 
-// Get Mon–Sun for the week containing a given date
 function getWeekDays(date: Date) {
   const day = (date.getDay() + 6) % 7; // Mon = 0
   const mon = new Date(date);
@@ -138,19 +94,17 @@ function getWeekDays(date: Date) {
   });
 }
 
-export interface CalendarEvent {
-  name: string;
-  dotColor: string;
-  amount: number;
-  paymentMode: "auto" | "manual";
-}
-
 interface CalendarGridProps {
   view: CalendarView;
-  onDaySelect?: (date: Date, events: CalendarEvent[]) => void;
+  eventsMap: Record<string, CalendarEvent[]>;
+  onDaySelect?: (date: Date) => void;
 }
 
-export function CalendarGrid({ view, onDaySelect }: CalendarGridProps) {
+export function CalendarGrid({
+  view,
+  eventsMap,
+  onDaySelect,
+}: CalendarGridProps) {
   const today = new Date();
   const [year, setYear] = useState(today.getFullYear());
   const [month, setMonth] = useState(today.getMonth());
@@ -162,13 +116,12 @@ export function CalendarGrid({ view, onDaySelect }: CalendarGridProps) {
 
   function handleSelect(date: Date) {
     setSelectedDate(date);
-    onDaySelect?.(date, EVENTS[date.getDate()] ?? []);
+    onDaySelect?.(date);
   }
 
   const isCurrentMonth =
     year === today.getFullYear() && month === today.getMonth();
 
-  // Navigation
   function prev() {
     if (view === "Week") {
       const d = new Date(weekAnchor);
@@ -217,7 +170,6 @@ export function CalendarGrid({ view, onDaySelect }: CalendarGridProps) {
 
   return (
     <div className="bg-surface border border-border rounded-2xl overflow-hidden h-max">
-      {/* Header */}
       <div className="flex items-center justify-between px-6 py-5">
         <h2 className="text-2xl font-bold text-foreground">{headerLabel()}</h2>
         <div className="flex items-center gap-1">
@@ -251,6 +203,7 @@ export function CalendarGrid({ view, onDaySelect }: CalendarGridProps) {
               today={today}
               isCurrentMonth={isCurrentMonth}
               selected={selected}
+              eventsMap={eventsMap}
               onSelect={(day) => {
                 setSelected(day);
                 handleSelect(new Date(year, month, day));
@@ -258,7 +211,6 @@ export function CalendarGrid({ view, onDaySelect }: CalendarGridProps) {
             />
           </motion.div>
         )}
-
         {view === "Week" && (
           <motion.div
             key="week"
@@ -271,11 +223,11 @@ export function CalendarGrid({ view, onDaySelect }: CalendarGridProps) {
               weekAnchor={weekAnchor}
               today={today}
               selectedDate={selectedDate}
+              eventsMap={eventsMap}
               onSelect={handleSelect}
             />
           </motion.div>
         )}
-
         {view === "Year" && (
           <motion.div
             key="year"
@@ -288,6 +240,7 @@ export function CalendarGrid({ view, onDaySelect }: CalendarGridProps) {
               year={year}
               today={today}
               selectedDate={selectedDate}
+              eventsMap={eventsMap}
               onSelect={handleSelect}
             />
           </motion.div>
@@ -304,6 +257,7 @@ function MonthView({
   today,
   isCurrentMonth,
   selected,
+  eventsMap,
   onSelect,
 }: {
   year: number;
@@ -311,10 +265,10 @@ function MonthView({
   today: Date;
   isCurrentMonth: boolean;
   selected: number | null;
+  eventsMap: Record<string, CalendarEvent[]>;
   onSelect: (d: number) => void;
 }) {
   const days = getCalendarDays(year, month);
-
   return (
     <>
       <div className="grid grid-cols-7 border-t border-border">
@@ -329,11 +283,12 @@ function MonthView({
       </div>
       <div className="grid grid-cols-7 border-t border-l border-border">
         {days.map((item, i) => {
-          const events = item.thisMonth ? (EVENTS[item.day] ?? []) : [];
+          const events = item.thisMonth
+            ? (eventsMap[toDateKey(year, month, item.day)] ?? [])
+            : [];
           const isToday =
             isCurrentMonth && item.thisMonth && item.day === today.getDate();
           const isSel = item.thisMonth && item.day === selected;
-
           return (
             <div
               key={i}
@@ -360,23 +315,22 @@ function MonthView({
               >
                 {item.day}
               </span>
-
               {events.length > 0 && (
                 <div className="flex flex-col gap-0.5 mt-2 w-full overflow-hidden">
                   {events.slice(0, 3).map((e, ei) => (
                     <span
                       key={ei}
-                      className="text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded truncate block"
+                      className="text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded truncate block backdrop-blur-sm"
                       style={{
-                        backgroundColor: `${e.dotColor}22`,
+                        backgroundColor: withAlpha(e.dotColor, 0.12),
                         color: e.dotColor,
-                        border: `1px solid ${e.dotColor}44`,
+                        border: `1px solid ${withAlpha(e.dotColor, 0.3)}`,
+                        boxShadow: `0 1px 4px ${withAlpha(e.dotColor, 0.15)}`,
                       }}
                     >
                       {e.name}
                     </span>
                   ))}
-                  {/* +N overflow badge */}
                   {events.length > 3 && (
                     <span className="text-[9px] font-bold text-muted shrink-0">
                       +{events.length - 3}
@@ -397,15 +351,16 @@ function WeekView({
   weekAnchor,
   today,
   selectedDate,
+  eventsMap,
   onSelect,
 }: {
   weekAnchor: Date;
   today: Date;
   selectedDate: Date | null;
+  eventsMap: Record<string, CalendarEvent[]>;
   onSelect: (date: Date) => void;
 }) {
   const weekDays = getWeekDays(weekAnchor);
-
   return (
     <>
       <div className="grid grid-cols-7 border-t border-border">
@@ -430,7 +385,9 @@ function WeekView({
       </div>
       <div className="grid grid-cols-7 border-t border-l border-border">
         {weekDays.map((d, i) => {
-          const events = EVENTS[d.getDate()] ?? [];
+          const events =
+            eventsMap[toDateKey(d.getFullYear(), d.getMonth(), d.getDate())] ??
+            [];
           const isToday = d.toDateString() === today.toDateString();
           const isSel = selectedDate?.toDateString() === d.toDateString();
           return (
@@ -452,16 +409,17 @@ function WeekView({
               {events.slice(0, 3).map((e, ei) => (
                 <div
                   key={ei}
-                  className="px-2 py-1.5 rounded text-[10px] font-bold tracking-wide"
+                  className="px-2 py-1.5 rounded text-[10px] font-bold tracking-wide backdrop-blur-sm"
                   style={{
-                    backgroundColor: `${e.dotColor}26`,
+                    backgroundColor: withAlpha(e.dotColor, 0.12),
                     color: e.dotColor,
-                    border: `1px solid ${e.dotColor}4d`,
+                    border: `1px solid ${withAlpha(e.dotColor, 0.3)}`,
+                    boxShadow: `0 2px 8px ${withAlpha(e.dotColor, 0.15)}`,
                   }}
                 >
                   <p className="uppercase tracking-widest">{e.name}</p>
                   <p className="font-mono mt-0.5 opacity-80">
-                    ${e.amount.toFixed(2)}
+                    {formatAmount(e.amount, e.currency)}
                   </p>
                 </div>
               ))}
@@ -483,11 +441,13 @@ function YearView({
   year,
   today,
   selectedDate,
+  eventsMap,
   onSelect,
 }: {
   year: number;
   today: Date;
   selectedDate: Date | null;
+  eventsMap: Record<string, CalendarEvent[]>;
   onSelect: (date: Date) => void;
 }) {
   return (
@@ -496,7 +456,6 @@ function YearView({
         const days = getCalendarDays(year, m);
         const isCurrentMonth =
           year === today.getFullYear() && m === today.getMonth();
-
         return (
           <div key={m} className="bg-surface p-4">
             <p
@@ -517,7 +476,9 @@ function YearView({
                 </div>
               ))}
               {days.map((item, i) => {
-                const events = item.thisMonth ? (EVENTS[item.day] ?? []) : [];
+                const events = item.thisMonth
+                  ? (eventsMap[toDateKey(year, m, item.day)] ?? [])
+                  : [];
                 const isToday =
                   isCurrentMonth &&
                   item.thisMonth &&
@@ -552,13 +513,17 @@ function YearView({
                     >
                       {item.day}
                     </span>
-                    {events.length > 0 && !isToday && (
+                    {events.length > 0 && (
                       <div className="flex items-center gap-px">
                         {events.slice(0, 3).map((e, ei) => (
                           <span
                             key={ei}
                             className="w-1 h-1 rounded-full shrink-0"
-                            style={{ backgroundColor: e.dotColor }}
+                            style={{
+                              backgroundColor: isToday
+                                ? "rgba(255,255,255,0.7)"
+                                : e.dotColor,
+                            }}
                           />
                         ))}
                         {events.length > 3 && (

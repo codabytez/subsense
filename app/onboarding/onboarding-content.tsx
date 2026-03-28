@@ -9,9 +9,13 @@ import { api } from "@/convex/_generated/api";
 import { authClient } from "@/lib/auth-client";
 import { Button } from "@/components/ui";
 import { cn } from "@/lib/utils";
+import { DEFAULT_CATEGORIES } from "@/lib/default-categories";
+import { toast } from "sonner";
+import { Select } from "@/components/ui/select";
+import { DatePicker } from "@/components/ui/date-picker";
 
 // ── Types ────────────────────────────────────────────────────────
-type BillingCycle = "monthly" | "yearly" | "weekly";
+type BillingCycle = "monthly" | "annual" | "weekly";
 
 interface OnboardingData {
   currency: string;
@@ -19,6 +23,8 @@ interface OnboardingData {
     name: string;
     amount: string;
     cycle: BillingCycle;
+    category: string;
+    nextPaymentDate: string;
   } | null;
 }
 
@@ -33,25 +39,55 @@ const CURRENCIES = [
 ];
 
 const POPULAR_SERVICES = [
-  { name: "Netflix", color: "#E50914" },
-  { name: "Spotify", color: "#1DB954" },
-  { name: "Apple Music", color: "#FA243C" },
-  { name: "YouTube Premium", color: "#FF0000" },
-  { name: "Disney+", color: "#113CCF" },
-  { name: "Amazon Prime", color: "#00A8E1" },
-  { name: "Adobe CC", color: "#FF0000" },
-  { name: "Microsoft 365", color: "#D83B01" },
-  { name: "Notion", color: "#000000" },
-  { name: "Figma", color: "#A259FF" },
-  { name: "ChatGPT Plus", color: "#10A37F" },
-  { name: "iCloud+", color: "#3478F6" },
+  { name: "Netflix", category: "Entertainment" },
+  { name: "Spotify", category: "Music" },
+  { name: "Apple Music", category: "Music" },
+  { name: "YouTube", category: "Entertainment" },
+  { name: "Disney+", category: "Entertainment" },
+  { name: "Amazon Prime", category: "Entertainment" },
+  { name: "Adobe CC", category: "Software & Apps" },
+  { name: "Microsoft 365", category: "Software & Apps" },
+  { name: "Notion", category: "Software & Apps" },
+  { name: "Figma", category: "Software & Apps" },
+  { name: "ChatGPT", category: "Software & Apps" },
+  { name: "iCloud+", category: "Cloud Storage" },
 ];
 
 const BILLING_CYCLES: { value: BillingCycle; label: string }[] = [
   { value: "weekly", label: "Weekly" },
   { value: "monthly", label: "Monthly" },
-  { value: "yearly", label: "Yearly" },
+  { value: "annual", label: "Yearly" },
 ];
+
+const ICON_COLORS: { rgba: string }[] = [
+  { rgba: "rgba(124,92,252,0.20)" },
+  { rgba: "rgba(45,212,191,0.20)" },
+  { rgba: "rgba(249,112,102,0.20)" },
+  { rgba: "rgba(160,160,175,0.20)" },
+  { rgba: "rgba(124,92,252,0.40)" },
+  { rgba: "rgba(45,212,191,0.40)" },
+  { rgba: "rgba(29,185,84,0.20)" },
+  { rgba: "rgba(229,9,20,0.20)" },
+  { rgba: "rgba(255,153,0,0.20)" },
+  { rgba: "rgba(0,120,212,0.20)" },
+  { rgba: "rgba(94,106,210,0.20)" },
+  { rgba: "rgba(249,112,102,0.40)" },
+];
+
+function iconColorFromName(name: string): string {
+  const trimmed = name.trim();
+  const hash = [...trimmed].reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
+  return ICON_COLORS[hash % ICON_COLORS.length].rgba;
+}
+
+/** Default nextPaymentDate = today + one cycle */
+function defaultNextPaymentDate(cycle: BillingCycle): string {
+  const d = new Date();
+  if (cycle === "weekly") d.setDate(d.getDate() + 7);
+  else if (cycle === "annual") d.setFullYear(d.getFullYear() + 1);
+  else d.setMonth(d.getMonth() + 1);
+  return d.toISOString().slice(0, 10);
+}
 
 // ── Shared input style ────────────────────────────────────────────
 const inputCls =
@@ -74,8 +110,11 @@ function StepCurrency({
   data: OnboardingData;
   onChange: (patch: Partial<OnboardingData>) => void;
 }) {
+  const selected =
+    CURRENCIES.find((c) => c.code === data.currency) ?? CURRENCIES[0];
+
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-8">
       <div className="flex flex-col gap-1">
         <h2 className="text-2xl font-black text-foreground">
           Choose your currency
@@ -85,28 +124,69 @@ function StepCurrency({
         </p>
       </div>
 
+      {/* Selected preview */}
+      <div className="flex items-center gap-4 bg-surface border border-primary/30 rounded-2xl px-5 py-4">
+        <div
+          className="w-14 h-14 rounded-2xl flex items-center justify-center shrink-0"
+          style={{ backgroundColor: "rgba(124,92,252,0.12)" }}
+        >
+          <span className="text-2xl font-black font-mono text-primary">
+            {selected.symbol}
+          </span>
+        </div>
+        <div>
+          <p className="text-base font-black text-foreground">
+            {selected.label}
+          </p>
+          <p className="text-xs text-muted font-semibold tracking-widest uppercase mt-0.5">
+            {selected.code}
+          </p>
+        </div>
+      </div>
+
+      {/* Grid */}
       <div className="grid grid-cols-3 gap-2">
-        {CURRENCIES.map(({ code, symbol, label }) => (
-          <button
-            key={code}
-            type="button"
-            onClick={() => onChange({ currency: code })}
-            className={cn(
-              "flex flex-col gap-0.5 px-3 py-2.5 rounded-xl border text-left transition-all",
-              data.currency === code
-                ? "border-primary/60 bg-primary/10 text-foreground"
-                : "border-border bg-surface text-muted hover:border-border/60 hover:text-foreground"
-            )}
-          >
-            <span className="text-base font-black font-mono">{symbol}</span>
-            <span className="text-[10px] font-bold tracking-widest uppercase">
-              {code}
-            </span>
-            <span className="text-[10px] text-muted leading-tight">
-              {label}
-            </span>
-          </button>
-        ))}
+        {CURRENCIES.map(({ code, symbol, label }) => {
+          const isSelected = data.currency === code;
+          return (
+            <button
+              key={code}
+              type="button"
+              onClick={() => onChange({ currency: code })}
+              className={cn(
+                "flex flex-col items-center gap-1.5 px-3 py-4 rounded-2xl border transition-all",
+                isSelected
+                  ? "border-primary/60 bg-primary/10"
+                  : "border-border bg-surface text-muted hover:border-primary/30 hover:bg-primary/5"
+              )}
+            >
+              <span
+                className={cn(
+                  "text-xl font-black font-mono",
+                  isSelected ? "text-primary" : "text-foreground"
+                )}
+              >
+                {symbol}
+              </span>
+              <span
+                className={cn(
+                  "text-[10px] font-bold tracking-widest uppercase",
+                  isSelected ? "text-primary" : "text-muted"
+                )}
+              >
+                {code}
+              </span>
+              <span
+                className={cn(
+                  "text-[9px] text-center leading-tight",
+                  isSelected ? "text-primary/70" : "text-muted/60"
+                )}
+              >
+                {label}
+              </span>
+            </button>
+          );
+        })}
       </div>
     </div>
   );
@@ -126,6 +206,8 @@ function StepFirstSubscription({
     name: "",
     amount: "",
     cycle: "monthly" as BillingCycle,
+    category: DEFAULT_CATEGORIES[0].name,
+    nextPaymentDate: "",
   };
   const currency =
     CURRENCIES.find((c) => c.code === data.currency) ?? CURRENCIES[0];
@@ -150,14 +232,16 @@ function StepFirstSubscription({
         <p className="text-[10px] font-bold tracking-widest uppercase text-muted">
           Popular services
         </p>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
           {POPULAR_SERVICES.map((service) => (
             <button
               key={service.name}
               type="button"
-              onClick={() => updateSub({ name: service.name })}
+              onClick={() =>
+                updateSub({ name: service.name, category: service.category })
+              }
               className={cn(
-                "px-3 py-1.5 rounded-full text-xs font-semibold border transition-all",
+                "shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold border transition-all",
                 sub.name === service.name
                   ? "border-primary/60 bg-primary/10 text-foreground"
                   : "border-border bg-surface text-muted hover:text-foreground hover:border-border/60"
@@ -171,6 +255,7 @@ function StepFirstSubscription({
 
       {/* Form fields */}
       <div className="flex flex-col gap-4">
+        {/* Name */}
         <div className="flex flex-col gap-1.5">
           <label className="text-[10px] font-bold tracking-widest uppercase text-muted">
             Service name
@@ -184,17 +269,21 @@ function StepFirstSubscription({
           />
         </div>
 
+        {/* Amount + Cycle */}
         <div className="flex gap-3">
           <div className="flex flex-col gap-1.5 flex-1">
             <label className="text-[10px] font-bold tracking-widest uppercase text-muted">
               Amount
             </label>
             <div className="relative">
-              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm text-muted font-mono">
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm text-muted font-mono pointer-events-none">
                 {currency.symbol}
               </span>
               <input
-                className={cn(inputCls, "pl-8")}
+                className={inputCls}
+                style={{
+                  paddingLeft: `${1 + currency.symbol.length * 0.6}rem`,
+                }}
                 placeholder="0.00"
                 min="0"
                 step="0.01"
@@ -226,6 +315,36 @@ function StepFirstSubscription({
               ))}
             </div>
           </div>
+        </div>
+
+        {/* Category */}
+        <div className="flex flex-col gap-1.5">
+          <label className="text-[10px] font-bold tracking-widest uppercase text-muted">
+            Category
+          </label>
+          <Select
+            value={sub.category}
+            onChange={(v) => updateSub({ category: v })}
+            options={DEFAULT_CATEGORIES.map(({ name, color }) => ({
+              value: name,
+              label: name,
+              dot: color,
+            }))}
+          />
+        </div>
+
+        {/* Next payment date */}
+        <div className="flex flex-col gap-1.5">
+          <label className="text-[10px] font-bold tracking-widest uppercase text-muted">
+            Next payment date{" "}
+            <span className="normal-case tracking-normal font-normal text-muted/60">
+              (optional)
+            </span>
+          </label>
+          <DatePicker
+            value={sub.nextPaymentDate}
+            onChange={(v) => updateSub({ nextPaymentDate: v })}
+          />
         </div>
       </div>
     </div>
@@ -280,24 +399,34 @@ function StepAllSet({
           </div>
 
           {sub && sub.name ? (
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-muted">First subscription</span>
-              <span className="text-sm font-semibold text-foreground">
-                {sub.name}
-                {sub.amount && (
-                  <span className="text-muted font-normal">
-                    {" "}
-                    · {currency.symbol}
-                    {sub.amount}/
-                    {sub.cycle === "monthly"
-                      ? "mo"
-                      : sub.cycle === "yearly"
-                        ? "yr"
-                        : "wk"}
+            <>
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-muted">First subscription</span>
+                <span className="text-sm font-semibold text-foreground">
+                  {sub.name}
+                  {sub.amount && (
+                    <span className="text-muted font-normal">
+                      {" "}
+                      · {currency.symbol}
+                      {sub.amount}/
+                      {sub.cycle === "monthly"
+                        ? "mo"
+                        : sub.cycle === "annual"
+                          ? "yr"
+                          : "wk"}
+                    </span>
+                  )}
+                </span>
+              </div>
+              {sub.category && (
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-muted">Category</span>
+                  <span className="text-sm font-semibold text-foreground">
+                    {sub.category}
                   </span>
-                )}
-              </span>
-            </div>
+                </div>
+              )}
+            </>
           ) : (
             <div className="flex justify-between items-center">
               <span className="text-sm text-muted">Subscriptions</span>
@@ -319,6 +448,7 @@ export function OnboardingContent() {
   const router = useRouter();
   const { data: session } = authClient.useSession();
   const createUser = useMutation(api.users.createUser);
+  const createSubscription = useMutation(api.subscriptions.createSubscription);
 
   const [step, setStep] = useState(0);
   const [direction, setDirection] = useState(1);
@@ -335,10 +465,43 @@ export function OnboardingContent() {
   }
 
   async function goNext() {
+    if (step === 1) {
+      const sub = data.subscription;
+      if (sub?.name.trim() && !sub.amount) {
+        toast.error("Please enter an amount for your subscription.");
+        return;
+      }
+    }
+
     if (step === STEPS.length - 1) {
       setIsSaving(true);
-      await createUser({ currency: data.currency });
-      router.push("/dashboard");
+      try {
+        await createUser({ currency: data.currency });
+
+        const sub = data.subscription;
+        if (sub && sub.name.trim() && sub.amount) {
+          const nextPaymentDate =
+            sub.nextPaymentDate || defaultNextPaymentDate(sub.cycle);
+          await createSubscription({
+            name: sub.name.trim(),
+            amount: parseFloat(sub.amount),
+            amountApprox: false,
+            currency: data.currency,
+            cycle: sub.cycle,
+            nextPaymentDate,
+            category: sub.category,
+            paymentMode: "manual",
+            status: "active",
+            remindersEnabled: true,
+            reminderIntervals: ["1d", "3d", "7d"],
+            iconColor: iconColorFromName(sub.name),
+          });
+        }
+
+        router.push("/dashboard");
+      } finally {
+        setIsSaving(false);
+      }
       return;
     }
     setDirection(1);
@@ -394,13 +557,14 @@ export function OnboardingContent() {
 
         {/* ── Navigation ────────────────────────────────────── */}
         <div className="flex items-center gap-3">
-          {step > 0 && step < STEPS.length - 1 && (
+          {step > 0 && (
             <Button
               variant="outlined"
-              className="h-12 w-12 shrink-0 rounded-xl"
+              className="h-12 shrink-0"
               onClick={goBack}
+              disabled={isSaving}
             >
-              <ArrowLeft2 size={18} color="currentColor" />
+              <ArrowLeft2 size={16} color="currentColor" />
             </Button>
           )}
 

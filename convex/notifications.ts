@@ -4,6 +4,8 @@ import { v } from "convex/values";
 import type { Doc, Id } from "./_generated/dataModel";
 import { sendWeeklyDigestEmail } from "./lib/email";
 
+const INTERVAL_DAYS: Record<string, number> = { "1d": 1, "3d": 3, "1w": 7 };
+
 const SYMBOL_MAP: Record<string, string> = {
   USD: "$",
   EUR: "€",
@@ -41,10 +43,83 @@ export const getSubsForUser = internalQuery({
   },
 });
 
+export const getSubsForReminders = internalQuery({
+  args: {},
+  handler: async (
+    ctx
+  ): Promise<
+    Array<{
+      sub: Doc<"subscriptions">;
+      userEmail: string;
+      userName: string;
+      userCurrency: string;
+      daysUntil: number;
+    }>
+  > => {
+    const today = new Date();
+    today.setUTCHours(0, 0, 0, 0);
+
+    const allSubs = await ctx.db.query("subscriptions").collect();
+
+    const matches: Array<{
+      sub: Doc<"subscriptions">;
+      userEmail: string;
+      userName: string;
+      userCurrency: string;
+      daysUntil: number;
+    }> = [];
+
+    for (const sub of allSubs) {
+      if (sub.status === "cancelled" || sub.status === "paused") continue;
+      if (!sub.nextPaymentDate) continue;
+
+      const due = new Date(sub.nextPaymentDate);
+      due.setUTCHours(0, 0, 0, 0);
+      const msPerDay = 86_400_000;
+      const daysUntil = Math.round(
+        (due.getTime() - today.getTime()) / msPerDay
+      );
+
+      // Due today — notify everyone regardless of reminder preferences.
+      // NOTE: when auto-payment processing is implemented, this cron must run
+      // before the payment is marked paid so the email goes out first.
+      const isDueToday = daysUntil === 0;
+
+      // Overdue — fires at 1 day and 1 week past the due date.
+      const isOverdue = daysUntil === -1 || daysUntil === -7;
+
+      // Advance reminder — only if the user opted in and the interval matches.
+      const isAdvanceReminder =
+        daysUntil > 0 &&
+        sub.remindersEnabled &&
+        sub.reminderIntervals.some(
+          (interval) => INTERVAL_DAYS[interval] === daysUntil
+        );
+
+      if (!isDueToday && !isOverdue && !isAdvanceReminder) continue;
+
+      const user = await ctx.db.get(sub.userId);
+      if (!user) continue;
+
+      matches.push({
+        sub,
+        userEmail: user.email,
+        userName: user.name,
+        userCurrency: user.currency ?? "USD",
+        daysUntil,
+      });
+    }
+
+    return matches;
+  },
+});
+
 // ── Price change action ────────────────────────────────────────
 
 export const sendPriceChangeNotification = internalAction({
   args: {
+    userId: v.id("users"),
+    subscriptionId: v.id("subscriptions"),
     email: v.string(),
     name: v.string(),
     serviceName: v.string(),
@@ -53,8 +128,17 @@ export const sendPriceChangeNotification = internalAction({
     currency: v.string(),
   },
   handler: async (
-    _ctx,
-    { email, name, serviceName, oldAmount, newAmount, currency }
+    ctx,
+    {
+      userId,
+      subscriptionId,
+      email,
+      name,
+      serviceName,
+      oldAmount,
+      newAmount,
+      currency,
+    }
   ) => {
     const { sendPriceChangeEmail } = await import("./lib/email");
     await sendPriceChangeEmail(
@@ -65,6 +149,77 @@ export const sendPriceChangeNotification = internalAction({
       newAmount,
       currencySymbol(currency)
     );
+    const direction = newAmount > oldAmount ? "increased" : "decreased";
+    const sym = currencySymbol(currency);
+    await ctx.runMutation(internal.inbox.createNotification, {
+      userId,
+      type: "price_change",
+      title: `${serviceName} price ${direction}`,
+      message: `${sym}${oldAmount.toFixed(2)} → ${sym}${newAmount.toFixed(2)}`,
+      subscriptionId,
+      link: `/dashboard/subscriptions/${subscriptionId}`,
+    });
+  },
+});
+
+// ── Subscription reminder action ───────────────────────────────
+
+export const sendSubscriptionReminders = internalAction({
+  args: {},
+  handler: async (ctx) => {
+    const matches = await ctx.runQuery(
+      internal.notifications.getSubsForReminders
+    );
+
+    const { sendReminderEmail } = await import("./lib/email");
+
+    for (const {
+      sub,
+      userEmail,
+      userName,
+      userCurrency,
+      daysUntil,
+    } of matches) {
+      const symbol = currencySymbol(sub.currency ?? userCurrency);
+      const renewalDate = new Date(sub.nextPaymentDate!).toLocaleDateString(
+        "en-US",
+        { month: "long", day: "numeric", year: "numeric" }
+      );
+      await sendReminderEmail(
+        userEmail,
+        userName,
+        sub.name,
+        sub.amount,
+        symbol,
+        sub.cycle,
+        daysUntil,
+        renewalDate
+      );
+
+      const isOverdue = daysUntil < 0;
+      const notifType = isOverdue ? "overdue" : "reminder";
+      const dayLabel =
+        daysUntil === -7
+          ? "a week ago"
+          : daysUntil === -1
+            ? "yesterday"
+            : daysUntil === 0
+              ? "today"
+              : daysUntil === 1
+                ? "tomorrow"
+                : `in ${daysUntil} days`;
+
+      await ctx.runMutation(internal.inbox.createNotification, {
+        userId: sub.userId,
+        type: notifType,
+        title: isOverdue
+          ? `${sub.name} is overdue`
+          : `${sub.name} renews ${dayLabel}`,
+        message: `${symbol}${sub.amount.toFixed(2)} · ${renewalDate}`,
+        subscriptionId: sub._id,
+        link: `/dashboard/subscriptions/${sub._id}`,
+      });
+    }
   },
 });
 

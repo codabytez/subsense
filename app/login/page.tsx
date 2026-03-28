@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import { useForm } from "react-hook-form";
 import { Eye, EyeSlash } from "iconsax-reactjs";
@@ -14,10 +14,27 @@ import { cn } from "@/lib/utils";
 import { signIn } from "@/lib/auth-client";
 import { loginSchema, type LoginFormValues } from "@/lib/validations/auth";
 
-export default function LoginPage() {
+const AUTH_ERRORS: Record<string, string> = {
+  USER_NOT_FOUND: "No account found with that email. Please sign up first.",
+  INVALID_TOKEN:
+    "Your verification link has expired or is invalid. Please sign up again.",
+  EMAIL_NOT_VERIFIED: "Please verify your email before signing in.",
+};
+
+function LoginPageInner() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [showPassword, setShowPassword] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+
+  useEffect(() => {
+    const error = searchParams.get("error");
+    if (error) {
+      toast.error(
+        AUTH_ERRORS[error] ?? "Something went wrong. Please try again."
+      );
+    }
+  }, [searchParams]);
 
   const {
     register,
@@ -285,5 +302,13 @@ export default function LoginPage() {
         </motion.div>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense>
+      <LoginPageInner />
+    </Suspense>
   );
 }

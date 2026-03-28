@@ -7,7 +7,6 @@ import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { toast } from "sonner";
 import { ArrowLeft, Sms } from "iconsax-reactjs";
 import { Button, Input } from "@/components/ui";
 import { authClient } from "@/lib/auth-client";
@@ -32,16 +31,10 @@ export default function ForgotPasswordPage() {
   });
 
   async function onSubmit(values: ForgotPasswordFormValues) {
-    const { error } = await authClient.requestPasswordReset({
+    await authClient.requestPasswordReset({
       email: values.email,
       redirectTo: `${window.location.origin}/reset-password`,
     });
-
-    if (error) {
-      toast.error(error.message ?? "Something went wrong. Please try again.");
-      return;
-    }
-
     setSent(true);
   }
 
@@ -145,11 +138,12 @@ export default function ForgotPasswordPage() {
                 Check your inbox
               </h2>
               <p className="text-sm text-muted">
-                We sent a reset link to{" "}
+                If{" "}
                 <span className="text-foreground font-medium">
                   {getValues("email")}
-                </span>
-                . It expires in 1 hour.
+                </span>{" "}
+                is registered, you&apos;ll receive a reset link shortly. It
+                expires in 1 hour.
               </p>
             </div>
             <Button

@@ -53,14 +53,20 @@ export function DeleteAccountModal({ open, onClose }: DeleteAccountModalProps) {
         setIsDeleting(false);
         return;
       }
+    } catch {
+      setPasswordError("Incorrect password. Please try again.");
+      setIsDeleting(false);
+      return;
+    }
+    try {
       await deleteAccount();
+      await signOut();
       toast.error("Your account has been deleted.", {
         description: "We're sorry to see you go.",
       });
-      await signOut();
       router.push("/login");
     } catch {
-      setPasswordError("Incorrect password. Please try again.");
+      setPasswordError("Something went wrong. Please try again.");
       setIsDeleting(false);
     }
   }

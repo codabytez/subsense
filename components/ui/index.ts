@@ -6,3 +6,5 @@ export * from "./filter-chip";
 export * from "./stat-card";
 export * from "./view-toggle";
 export * from "./select";
+export * from "./confirm-modal";
+export * from "./date-picker";

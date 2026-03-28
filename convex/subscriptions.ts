@@ -100,6 +100,7 @@ export const updateSubscription = mutation({
     plan: v.optional(v.string()),
     amount: v.optional(v.number()),
     amountApprox: v.optional(v.boolean()),
+    currency: v.optional(v.string()),
     cycle: v.optional(cycleValidator),
     customInterval: v.optional(v.string()),
     nextPaymentDate: v.optional(v.string()),
@@ -127,6 +128,8 @@ export const updateSubscription = mutation({
         0,
         internal.notifications.sendPriceChangeNotification,
         {
+          userId: user._id,
+          subscriptionId: id,
           email: user.email,
           name: user.name,
           serviceName: sub.name,
@@ -145,6 +148,12 @@ export const deleteSubscription = mutation({
     const user = await getAuthUser(ctx);
     const sub = await ctx.db.get(id);
     if (!sub || sub.userId !== user._id) throw new Error("Not found");
+    await ctx.runMutation(internal.paymentLogs.deleteLogsBySubscription, {
+      subscriptionId: id,
+    });
+    await ctx.runMutation(internal.inbox.deleteNotificationsBySubscription, {
+      subscriptionId: id,
+    });
     await ctx.db.delete(id);
   },
 });
@@ -156,6 +165,19 @@ export const deleteSubscriptionsByUser = internalMutation({
       .query("subscriptions")
       .withIndex("by_user", (q) => q.eq("userId", userId))
       .collect();
-    await Promise.all(subs.map((s) => ctx.db.delete(s._id)));
+    await Promise.all(
+      subs.map(async (s) => {
+        await ctx.runMutation(internal.paymentLogs.deleteLogsBySubscription, {
+          subscriptionId: s._id,
+        });
+        await ctx.runMutation(
+          internal.inbox.deleteNotificationsBySubscription,
+          {
+            subscriptionId: s._id,
+          }
+        );
+        await ctx.db.delete(s._id);
+      })
+    );
   },
 });

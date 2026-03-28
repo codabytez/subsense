@@ -48,9 +48,45 @@ export default defineSchema({
     ),
     notes: v.optional(v.string()),
     iconColor: v.string(),
+    linkedEmail: v.optional(v.string()),
+    linkedLabel: v.optional(v.string()),
+    usageFrequency: v.optional(
+      v.union(v.literal("rarely"), v.literal("weekly"), v.literal("daily"))
+    ),
+    usageNotes: v.optional(v.string()),
   })
     .index("by_user", ["userId"])
     .index("by_user_status", ["userId", "status"]),
+
+  paymentLogs: defineTable({
+    subscriptionId: v.id("subscriptions"),
+    userId: v.id("users"),
+    amount: v.number(),
+    currency: v.string(),
+    date: v.string(),
+    paymentMethodId: v.optional(v.id("paymentMethods")),
+  })
+    .index("by_subscription", ["subscriptionId"])
+    .index("by_user", ["userId"]),
+
+  inbox: defineTable({
+    userId: v.id("users"),
+    type: v.union(
+      v.literal("reminder"),
+      v.literal("overdue"),
+      v.literal("payment_confirmed"),
+      v.literal("auto_payment"),
+      v.literal("price_change")
+    ),
+    title: v.string(),
+    message: v.string(),
+    read: v.boolean(),
+    subscriptionId: v.optional(v.id("subscriptions")),
+    link: v.optional(v.string()),
+  })
+    .index("by_user", ["userId"])
+    .index("by_user_read", ["userId", "read"])
+    .index("by_subscription", ["subscriptionId"]),
 
   paymentMethods: defineTable({
     userId: v.id("users"),

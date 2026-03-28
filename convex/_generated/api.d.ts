@@ -12,10 +12,13 @@ import type * as auth from "../auth.js";
 import type * as categories from "../categories.js";
 import type * as crons from "../crons.js";
 import type * as http from "../http.js";
+import type * as inbox from "../inbox.js";
 import type * as lib_email from "../lib/email.js";
 import type * as notifications from "../notifications.js";
+import type * as paymentLogs from "../paymentLogs.js";
 import type * as paymentMethods from "../paymentMethods.js";
 import type * as subscriptions from "../subscriptions.js";
+import type * as support from "../support.js";
 import type * as users from "../users.js";
 
 import type {
@@ -29,10 +32,13 @@ declare const fullApi: ApiFromModules<{
   categories: typeof categories;
   crons: typeof crons;
   http: typeof http;
+  inbox: typeof inbox;
   "lib/email": typeof lib_email;
   notifications: typeof notifications;
+  paymentLogs: typeof paymentLogs;
   paymentMethods: typeof paymentMethods;
   subscriptions: typeof subscriptions;
+  support: typeof support;
   users: typeof users;
 }>;
 

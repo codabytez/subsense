@@ -52,7 +52,7 @@ export function Toggle({
         className={cn(
           "relative w-14 h-7 rounded-full transition-colors duration-200 shrink-0 outline-none",
           disabled ? "opacity-40 cursor-not-allowed" : "cursor-pointer",
-          on ? "bg-primary" : "bg-white/15"
+          on ? "bg-primary" : "bg-black/10"
         )}
       >
         <Switch.Thumb className="block w-5 h-5 rounded-full shadow-sm transition-transform duration-200 translate-x-1 data-[state=checked]:translate-x-8 bg-white/50 data-[state=checked]:bg-white" />

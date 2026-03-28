@@ -38,6 +38,11 @@ export const createUser = mutation({
     if (!identity) throw new Error("Not authenticated");
     const email = identity.email;
     if (!email) throw new Error("No email in session");
+    const existing = await ctx.db
+      .query("users")
+      .withIndex("by_email", (q) => q.eq("email", email))
+      .unique();
+    if (existing) return existing._id;
     const name = (identity.name as string | undefined) ?? "";
     return await ctx.db.insert("users", { name, email, currency });
   },
@@ -57,6 +62,12 @@ export const deleteUserData = internalMutation({
   args: { id: v.id("users") },
   handler: async (ctx, { id }) => {
     await ctx.runMutation(internal.subscriptions.deleteSubscriptionsByUser, {
+      userId: id,
+    });
+    await ctx.runMutation(internal.paymentLogs.deleteLogsByUser, {
+      userId: id,
+    });
+    await ctx.runMutation(internal.inbox.deleteNotificationsByUser, {
       userId: id,
     });
     await ctx.runMutation(internal.categories.deleteCategoriesByUser, {
