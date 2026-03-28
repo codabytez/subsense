@@ -167,7 +167,7 @@ export function SubscriptionsView() {
       {/* Page header */}
       <div className="flex items-start justify-between mb-6">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">
             My Subscriptions
           </h1>
           <p className="text-sm text-muted mt-1">

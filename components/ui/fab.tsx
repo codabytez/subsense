@@ -17,7 +17,7 @@ export function Fab({ onClick, icon }: FabProps) {
       transition={{ delay: 0.4, type: "spring", stiffness: 300, damping: 20 }}
       whileTap={{ scale: 0.92 }}
       whileHover={{ scale: 1.06 }}
-      className="fixed bottom-8 right-8 w-14 h-14 bg-primary rounded-2xl flex items-center justify-center shadow-lg shadow-primary/30 z-40"
+      className="fixed bottom-8 right-8 hidden md:flex w-14 h-14 bg-primary rounded-2xl items-center justify-center shadow-lg shadow-primary/30 z-40"
     >
       {icon ?? <Add size={24} color="white" />}
     </motion.button>

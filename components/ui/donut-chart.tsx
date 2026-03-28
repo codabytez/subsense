@@ -34,7 +34,7 @@ export function DonutChart({
   }));
 
   return (
-    <div className="flex items-center gap-6">
+    <div className="flex flex-col xl:flex-row items-center gap-4 xl:gap-6">
       {/* SVG donut */}
       <div className="relative shrink-0">
         <svg
@@ -88,7 +88,7 @@ export function DonutChart({
       </div>
 
       {/* Legend */}
-      <ul className="flex flex-col gap-4 min-w-48">
+      <ul className="flex flex-col gap-3 w-full xl:min-w-48">
         {segments.map((seg) => (
           <li
             key={seg.label}

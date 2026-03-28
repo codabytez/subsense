@@ -184,7 +184,7 @@ function ViewAllModal({
               <span className="text-sm font-bold text-foreground flex-1">
                 {cat.name}
               </span>
-              <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+              <div className="flex items-center gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
                 <button
                   onClick={() =>
                     onEdit({ id: cat._id, name: cat.name, color: cat.color })
