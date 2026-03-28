@@ -83,7 +83,7 @@ export const deleteUserData = internalMutation({
 export const updateNotificationPreferences = mutation({
   args: {
     notifEmailDigest: v.boolean(),
-    notifPushEnabled: v.boolean(),
+    notifMuteAll: v.boolean(),
     notifPriceSensitivity: v.boolean(),
   },
   handler: async (ctx, args) => {

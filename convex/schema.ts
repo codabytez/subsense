@@ -8,7 +8,7 @@ export default defineSchema({
     currency: v.string(),
     avatarUrl: v.optional(v.string()),
     notifEmailDigest: v.optional(v.boolean()),
-    notifPushEnabled: v.optional(v.boolean()),
+    notifMuteAll: v.optional(v.boolean()),
     notifPriceSensitivity: v.optional(v.boolean()),
   }).index("by_email", ["email"]),
 

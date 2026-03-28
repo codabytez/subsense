@@ -123,7 +123,7 @@ export const updateSubscription = mutation({
 
     await ctx.db.patch(id, patch);
 
-    if (amountChanged && user.notifPriceSensitivity) {
+    if (amountChanged && user.notifPriceSensitivity && !user.notifMuteAll) {
       await ctx.scheduler.runAfter(
         0,
         internal.notifications.sendPriceChangeNotification,
