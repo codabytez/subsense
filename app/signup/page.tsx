@@ -12,7 +12,7 @@ export const metadata: Metadata = {
     url: "https://subsense.unbuilt.studio/signup",
     images: [
       {
-        url: "/og-image.png",
+        url: "/opengraph-image",
         width: 1200,
         height: 630,
         alt: "Subsense",
