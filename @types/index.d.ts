@@ -1,6 +1,9 @@
 /** Current billing status of a subscription */
 type SubscriptionStatus = "active" | "trial" | "paused" | "cancelled";
 
+/** A single subscription record as stored in the database */
+type CalendarView = "Week" | "Month" | "Year";
+
 /** How often the subscription is billed */
 type BillingCycle =
   | "weekly"

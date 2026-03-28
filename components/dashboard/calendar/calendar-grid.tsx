@@ -6,8 +6,6 @@ import { ArrowLeft2, ArrowRight2 } from "iconsax-reactjs";
 import { cn } from "@/lib/utils";
 import { formatAmount } from "@/lib/currency";
 
-export type CalendarView = "Week" | "Month" | "Year";
-
 const WEEKDAYS = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"];
 const WEEKDAYS_SHORT = ["M", "T", "W", "T", "F", "S", "S"];
 

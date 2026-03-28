@@ -1,5 +1,6 @@
-export { MonthlyBurn } from "./monthly-burn";
-export { UpcomingRenewals } from "./upcoming-renewals";
-export { StatsPanel } from "./stats-panel";
-export { RecentActivity } from "./recent-activity";
-export { InsightCard } from "./insight-card";
+export * from "./monthly-burn";
+export * from "./upcoming-renewals";
+export * from "./stats-panel";
+export * from "./recent-activity";
+export * from "./insight-card";
+export * from "./dashboard-page";
