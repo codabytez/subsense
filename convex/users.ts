@@ -5,6 +5,7 @@ import {
   mutation,
   query,
 } from "./_generated/server";
+import type { Doc } from "./_generated/dataModel";
 import { internal } from "./_generated/api";
 import { v } from "convex/values";
 import type { GenericActionCtx, GenericDataModel } from "convex/server";
@@ -147,6 +148,28 @@ export const deleteAccount = action({
     });
     if (appUser) {
       await ctx.runMutation(internal.users.deleteUserData, { id: appUser._id });
+    }
+  },
+});
+
+/** One-off migration: rename notifPushEnabled → notifMuteAll */
+export const migrateNotifPushToMuteAll = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const users = await ctx.db.query("users").collect();
+    for (const user of users) {
+      const legacy = (user as Doc<"users"> & { notifPushEnabled?: boolean })
+        .notifPushEnabled;
+      if (legacy === undefined) continue;
+      const {
+        _id,
+        _creationTime,
+        notifPushEnabled: _removed,
+        ...fields
+      } = user as Doc<"users"> & { notifPushEnabled?: boolean };
+      void _id;
+      void _creationTime;
+      await ctx.db.replace(user._id, { ...fields, notifMuteAll: legacy });
     }
   },
 });
