@@ -14,6 +14,7 @@ export const createAuth = (ctx: GenericCtx) => {
     baseURL: process.env.SITE_URL ?? "http://localhost:3000",
     trustedOrigins: [
       process.env.SITE_URL ?? "http://localhost:3000",
+      "http://localhost:3000",
       "https://*.vercel.app",
       "https://*.unbuilt.studio",
     ],
