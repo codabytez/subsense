@@ -11,9 +11,9 @@ export const createAuth = (ctx: GenericCtx) => {
   return betterAuth({
     appName: "Subsense",
     secret: process.env.BETTER_AUTH_SECRET,
-    baseURL: process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000",
+    baseURL: process.env.SITE_URL ?? "http://localhost:3000",
     trustedOrigins: [
-      process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000",
+      process.env.SITE_URL ?? "http://localhost:3000",
       "https://*.vercel.app",
       "https://*.unbuilt.studio",
     ],
