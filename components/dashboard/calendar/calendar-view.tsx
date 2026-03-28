@@ -14,7 +14,6 @@ import {
   WeeklyCashFlow,
 } from "@/components/dashboard/calendar";
 import {
-  type CalendarView,
   type CalendarEvent,
   toDateKey,
 } from "@/components/dashboard/calendar/calendar-grid";

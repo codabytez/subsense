@@ -6,3 +6,5 @@ export * from "./subscription-stats";
 export * from "./payment-history";
 export * from "./roi-usage";
 export * from "./linked-account";
+export * from "./subscriptions-view";
+export * from "./subscription-detail-view";
