@@ -29,7 +29,7 @@ export const getUsersForDigest = internalQuery({
   args: {},
   handler: async (ctx): Promise<Doc<"users">[]> => {
     const all = await ctx.db.query("users").collect();
-    return all.filter((u) => u.notifEmailDigest === true);
+    return all.filter((u) => u.notifEmailDigest === true && !u.notifMuteAll);
   },
 });
 
@@ -99,7 +99,7 @@ export const getSubsForReminders = internalQuery({
       if (!isDueToday && !isOverdue && !isAdvanceReminder) continue;
 
       const user = await ctx.db.get(sub.userId);
-      if (!user) continue;
+      if (!user || user.notifMuteAll) continue;
 
       matches.push({
         sub,

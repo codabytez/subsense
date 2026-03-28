@@ -88,14 +88,16 @@ export const confirmPayment = mutation({
       nextPaymentDate: advanceDate(sub.nextPaymentDate, sub.cycle),
     });
 
-    await ctx.runMutation(internal.inbox.createNotification, {
-      userId: user._id,
-      type: "payment_confirmed",
-      title: "Payment confirmed",
-      message: `${sub.name} — ${sub.currency} ${sub.amount.toFixed(2)} marked as paid.`,
-      subscriptionId,
-      link: `/dashboard/subscriptions/${subscriptionId}`,
-    });
+    if (!user.notifMuteAll) {
+      await ctx.runMutation(internal.inbox.createNotification, {
+        userId: user._id,
+        type: "payment_confirmed",
+        title: "Payment confirmed",
+        message: `${sub.name} — ${sub.currency} ${sub.amount.toFixed(2)} marked as paid.`,
+        subscriptionId,
+        link: `/dashboard/subscriptions/${subscriptionId}`,
+      });
+    }
   },
 });
 
@@ -212,14 +214,17 @@ export const processAutoPayments = internalMutation({
         nextPaymentDate: advanceDate(sub.nextPaymentDate, sub.cycle),
       });
 
-      await ctx.runMutation(internal.inbox.createNotification, {
-        userId: sub.userId,
-        type: "auto_payment",
-        title: "Auto-payment processed",
-        message: `${sub.name} — ${sub.currency} ${sub.amount.toFixed(2)} was automatically logged.`,
-        subscriptionId: sub._id,
-        link: `/dashboard/subscriptions/${sub._id}`,
-      });
+      const subUser = await ctx.db.get(sub.userId);
+      if (!subUser?.notifMuteAll) {
+        await ctx.runMutation(internal.inbox.createNotification, {
+          userId: sub.userId,
+          type: "auto_payment",
+          title: "Auto-payment processed",
+          message: `${sub.name} — ${sub.currency} ${sub.amount.toFixed(2)} was automatically logged.`,
+          subscriptionId: sub._id,
+          link: `/dashboard/subscriptions/${sub._id}`,
+        });
+      }
     }
   },
 });

@@ -178,7 +178,7 @@ export function SettingsView() {
   const [editedCurrency, setEditedCurrency] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [savingNotif, setSavingNotif] = useState<
-    "push" | "digest" | "price" | null
+    "mute" | "digest" | "price" | null
   >(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showChangePassword, setShowChangePassword] = useState(false);
@@ -473,15 +473,15 @@ export function SettingsView() {
           <Section icon={Notification} title="Notifications">
             <div className="flex flex-col divide-y divide-border">
               <Toggle
-                label="Push Notifications"
-                description="Real-time subscription alerts (coming soon)"
-                checked={user?.notifPushEnabled ?? false}
-                disabled={savingNotif === "push"}
+                label="Mute All Notifications"
+                description="Pause all emails and inbox alerts"
+                checked={user?.notifMuteAll ?? false}
+                disabled={savingNotif === "mute"}
                 onChange={async (v) => {
-                  setSavingNotif("push");
+                  setSavingNotif("mute");
                   try {
                     await updateNotifPrefs({
-                      notifPushEnabled: v,
+                      notifMuteAll: v,
                       notifEmailDigest: user?.notifEmailDigest ?? true,
                       notifPriceSensitivity:
                         user?.notifPriceSensitivity ?? false,
@@ -495,13 +495,15 @@ export function SettingsView() {
                 label="Email Digests"
                 description="Weekly spending reports"
                 checked={user?.notifEmailDigest ?? true}
-                disabled={savingNotif === "digest"}
+                disabled={
+                  savingNotif === "digest" || (user?.notifMuteAll ?? false)
+                }
                 onChange={async (v) => {
                   setSavingNotif("digest");
                   try {
                     await updateNotifPrefs({
                       notifEmailDigest: v,
-                      notifPushEnabled: user?.notifPushEnabled ?? false,
+                      notifMuteAll: user?.notifMuteAll ?? false,
                       notifPriceSensitivity:
                         user?.notifPriceSensitivity ?? false,
                     });
@@ -514,14 +516,16 @@ export function SettingsView() {
                 label="Price Sensitivity"
                 description="Email alert when you update a subscription's amount"
                 checked={user?.notifPriceSensitivity ?? false}
-                disabled={savingNotif === "price"}
+                disabled={
+                  savingNotif === "price" || (user?.notifMuteAll ?? false)
+                }
                 onChange={async (v) => {
                   setSavingNotif("price");
                   try {
                     await updateNotifPrefs({
                       notifPriceSensitivity: v,
                       notifEmailDigest: user?.notifEmailDigest ?? true,
-                      notifPushEnabled: user?.notifPushEnabled ?? false,
+                      notifMuteAll: user?.notifMuteAll ?? false,
                     });
                   } finally {
                     setSavingNotif(null);
