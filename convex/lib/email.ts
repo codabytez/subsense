@@ -6,6 +6,8 @@ function getResend() {
   return new Resend(key);
 }
 
+const APP_URL = process.env.SITE_URL ?? "https://subsense.unbuilt.studio";
+
 const FROM = "Subsense <noreply@unbuilt.studio>";
 
 export async function sendVerificationEmail(
@@ -162,7 +164,7 @@ function weeklyDigestHtml(data: DigestData) {
 
                 <p style="margin:0;font-size:12px;color:#6b7280;line-height:1.6">
                   You're receiving this because you enabled weekly digests in Subsense.<br/>
-                  <a href="https://subsense.app/dashboard/settings" style="color:#7c3aed;text-decoration:none">Manage notification preferences</a>
+                  <a href="${APP_URL}/dashboard/settings" style="color:#7c3aed;text-decoration:none">Manage notification preferences</a>
                 </p>
               </td>
             </tr>
@@ -214,7 +216,7 @@ function priceChangeEmailHtml(
                   </tr>
                 </table>
                 <p style="margin:0;font-size:12px;color:#6b7280;line-height:1.6">
-                  <a href="https://subsense.app/dashboard/settings" style="color:#7c3aed;text-decoration:none">Manage notification preferences</a>
+                  <a href="${APP_URL}/dashboard/settings" style="color:#7c3aed;text-decoration:none">Manage notification preferences</a>
                 </p>
               </td>
             </tr>
@@ -319,7 +321,7 @@ function reminderEmailHtml(
                 </div>
                 <p style="margin:0;font-size:12px;color:#6b7280;line-height:1.6">
                   ${isOverdue ? "You're receiving this because this subscription is past its renewal date." : "You're receiving this because you enabled renewal reminders for this subscription."}<br/>
-                  <a href="https://subsense.app/dashboard/settings" style="color:#7c3aed;text-decoration:none">Manage notification preferences</a>
+                  <a href="${APP_URL}/dashboard/settings" style="color:#7c3aed;text-decoration:none">Manage notification preferences</a>
                 </p>
               </td>
             </tr>
