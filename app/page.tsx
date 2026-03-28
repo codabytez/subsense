@@ -18,7 +18,7 @@ export const metadata: Metadata = {
       "One dashboard for all your recurring costs. Track subscriptions, get renewal alerts, and cut what you don't use. Free forever.",
     images: [
       {
-        url: "/og-image.png",
+        url: "/opengraph-image",
         width: 1200,
         height: 630,
         alt: "Subsense — Subscription tracker",
@@ -31,7 +31,7 @@ export const metadata: Metadata = {
     title: "Subsense — Every subscription, perfectly tracked",
     description:
       "One dashboard for all your recurring costs. Track subscriptions, get renewal alerts, and cut what you don't use.",
-    images: ["/og-image.png"],
+    images: ["/opengraph-image"],
   },
   robots: {
     index: true,
