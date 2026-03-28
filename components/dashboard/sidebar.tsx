@@ -4,6 +4,7 @@ import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useQuery } from "convex/react";
 import { motion, type Variants, type Transition } from "framer-motion";
 import {
   Category,
@@ -15,7 +16,9 @@ import {
 } from "iconsax-reactjs";
 import { Button } from "@/components/ui";
 import { SubscriptionFormModal } from "@/components/dashboard/subscriptions";
+import { SignOutModal } from "@/components/dashboard/sign-out-modal";
 import { cn } from "@/lib/utils";
+import { api } from "@/convex/_generated/api";
 
 const navItems = [
   { label: "Overview", href: "/dashboard", icon: Category },
@@ -45,9 +48,20 @@ const itemVariants: Variants = {
   },
 };
 
+function initials(name: string) {
+  return name
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0].toUpperCase())
+    .join("");
+}
+
 export function Sidebar() {
   const pathname = usePathname();
+  const user = useQuery(api.users.getCurrentUser);
   const [showForm, setShowForm] = useState(false);
+  const [showSignOut, setShowSignOut] = useState(false);
 
   return (
     <>
@@ -67,16 +81,25 @@ export function Sidebar() {
           <Image
             src="/white_logo_mark.svg"
             alt="Subsense"
-            width={26}
-            height={26}
-            style={{ width: 26, height: "auto" }}
+            width={29}
+            height={27}
+            className="login-logo-dark"
+            style={{ width: 28, height: "auto" }}
+          />
+          <Image
+            src="/dark_logo_mark.svg"
+            alt="Subsense"
+            width={76}
+            height={72}
+            className="login-logo-light"
+            style={{ width: 28, height: "auto" }}
           />
           <div className="flex flex-col">
             <span className="text-[11px] font-bold tracking-widest uppercase text-primary leading-none font-display">
               Subsense
             </span>
             <span className="text-[10px] tracking-widest uppercase text-muted leading-none mt-1">
-              Premium Tier
+              Free Tier
             </span>
           </div>
         </motion.div>
@@ -155,18 +178,61 @@ export function Sidebar() {
             Support
           </Link>
 
-          <button className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-[11px] font-semibold tracking-widest uppercase text-muted hover:text-foreground hover:bg-white/3 transition-colors duration-200 w-full cursor-pointer">
+          <button
+            onClick={() => setShowSignOut(true)}
+            className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-[11px] font-semibold tracking-widest uppercase text-muted hover:text-foreground hover:bg-white/3 transition-colors duration-200 w-full cursor-pointer"
+          >
             <LogoutCurve size={20} variant="Outline" color="currentColor" />
             Sign Out
           </button>
+
+          {/* User profile strip */}
+          {user === undefined ? (
+            <div className="flex items-center gap-3 mt-2 px-3 py-2.5 rounded-xl animate-pulse">
+              <div className="w-8 h-8 rounded-full bg-white/10 shrink-0" />
+              <div className="flex flex-col gap-1.5 flex-1 min-w-0">
+                <div className="h-3 w-24 bg-white/10 rounded" />
+                <div className="h-2.5 w-32 bg-white/[0.07] rounded" />
+              </div>
+            </div>
+          ) : (
+            <Link
+              href="/dashboard/settings"
+              className="flex items-center gap-3 mt-2 px-3 py-2.5 rounded-xl hover:bg-white/3 transition-colors duration-200 group"
+            >
+              <div className="relative w-8 h-8 rounded-full overflow-hidden bg-primary shrink-0 flex items-center justify-center">
+                {user?.avatarUrl ? (
+                  <Image
+                    src={user.avatarUrl}
+                    alt="avatar"
+                    fill
+                    className="object-cover"
+                    unoptimized
+                  />
+                ) : (
+                  <span className="text-[11px] font-black text-white">
+                    {user?.name ? initials(user.name) : "—"}
+                  </span>
+                )}
+              </div>
+              <div className="flex flex-col min-w-0">
+                <span className="text-xs font-bold text-foreground truncate leading-none">
+                  {user?.name ?? "—"}
+                </span>
+                <span className="text-[10px] text-muted mt-0.5 truncate">
+                  {user?.email ?? ""}
+                </span>
+              </div>
+            </Link>
+          )}
         </motion.div>
       </motion.aside>
 
       <SubscriptionFormModal
         open={showForm}
         onClose={() => setShowForm(false)}
-        onSave={() => setShowForm(false)}
       />
+      <SignOutModal open={showSignOut} onClose={() => setShowSignOut(false)} />
     </>
   );
 }

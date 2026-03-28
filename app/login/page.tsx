@@ -1,20 +1,80 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, Suspense } from "react";
+import { zodResolver } from "@hookform/resolvers/zod";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
+import { useForm } from "react-hook-form";
 import { Eye, EyeSlash } from "iconsax-reactjs";
-import { Button } from "@/components/ui";
+import { toast } from "sonner";
+import { Button, Input } from "@/components/ui";
 import { cn } from "@/lib/utils";
+import { signIn } from "@/lib/auth-client";
+import { loginSchema, type LoginFormValues } from "@/lib/validations/auth";
 
-const inputCls =
-  "w-full bg-surface border border-border rounded-xl px-4 py-3 text-sm text-foreground placeholder:text-muted/40 focus:outline-none focus:border-primary/50 transition-colors";
+const AUTH_ERRORS: Record<string, string> = {
+  USER_NOT_FOUND: "No account found with that email. Please sign up first.",
+  INVALID_TOKEN:
+    "Your verification link has expired or is invalid. Please sign up again.",
+  EMAIL_NOT_VERIFIED: "Please verify your email before signing in.",
+};
 
-export default function LoginPage() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+function LoginPageInner() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [showPassword, setShowPassword] = useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+
+  useEffect(() => {
+    const error = searchParams.get("error");
+    if (error) {
+      toast.error(
+        AUTH_ERRORS[error] ?? "Something went wrong. Please try again."
+      );
+    }
+  }, [searchParams]);
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting, isValid },
+  } = useForm<LoginFormValues>({
+    resolver: zodResolver(loginSchema),
+    mode: "onChange",
+    defaultValues: {
+      email: "",
+      password: "",
+    },
+  });
+
+  const isLoading = isSubmitting || isGoogleLoading;
+
+  async function onSubmit(values: LoginFormValues) {
+    const result = await signIn.email({
+      email: values.email,
+      password: values.password,
+    });
+
+    if (result.error) {
+      toast.error(result.error.message ?? "Sign in failed. Please try again.");
+      return;
+    }
+
+    router.refresh();
+    router.push("/dashboard");
+  }
+
+  async function handleGoogleSignIn() {
+    setIsGoogleLoading(true);
+    try {
+      await signIn.social({ provider: "google", callbackURL: "/dashboard" });
+    } catch {
+      toast.error("Google sign in failed. Please try again.");
+      setIsGoogleLoading(false);
+    }
+  }
 
   return (
     <div className="min-h-screen bg-background flex">
@@ -30,16 +90,16 @@ export default function LoginPage() {
           <Image
             src="/white_logo_mark.svg"
             alt="Subsense"
-            width={28}
-            height={28}
+            width={29}
+            height={27}
             className="login-logo-dark"
             style={{ width: 28, height: "auto" }}
           />
           <Image
             src="/dark_logo_mark.svg"
             alt="Subsense"
-            width={28}
-            height={28}
+            width={76}
+            height={72}
             className="login-logo-light"
             style={{ width: 28, height: "auto" }}
           />
@@ -99,8 +159,8 @@ export default function LoginPage() {
             <Image
               src="/white_logo_mark.svg"
               alt="Subsense"
-              width={24}
-              height={24}
+              width={29}
+              height={27}
               style={{ width: 24, height: "auto" }}
             />
             <span className="text-sm font-bold tracking-widest uppercase text-primary font-display">
@@ -119,21 +179,30 @@ export default function LoginPage() {
           {/* Form */}
           <form
             className="flex flex-col gap-4"
-            onSubmit={(e) => e.preventDefault()}
+            onSubmit={handleSubmit(onSubmit)}
+            noValidate
           >
             {/* Email */}
             <div className="flex flex-col gap-1.5">
               <label className="text-[10px] font-bold tracking-widest uppercase text-muted">
                 Email
               </label>
-              <input
-                className={inputCls}
+              <Input
+                {...register("email")}
                 type="email"
                 placeholder="you@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
                 autoComplete="email"
+                disabled={isLoading}
+                aria-invalid={Boolean(errors.email)}
+                className={cn(
+                  errors.email && "border-tertiary/60 focus:border-tertiary/60"
+                )}
               />
+              {errors.email && (
+                <p className="text-[11px] text-tertiary">
+                  {errors.email.message}
+                </p>
+              )}
             </div>
 
             {/* Password */}
@@ -150,18 +219,27 @@ export default function LoginPage() {
                 </Link>
               </div>
               <div className="relative">
-                <input
-                  className={cn(inputCls, "pr-11")}
+                <Input
+                  {...register("password")}
                   type={showPassword ? "text" : "password"}
                   placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
                   autoComplete="current-password"
+                  disabled={isLoading}
+                  aria-invalid={Boolean(errors.password)}
+                  className={cn(
+                    "pr-11",
+                    errors.password &&
+                      "border-tertiary/60 focus:border-tertiary/60"
+                  )}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword((v) => !v)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-foreground transition-colors"
+                  disabled={isLoading}
+                  className={cn(
+                    "absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-foreground transition-colors",
+                    isLoading && "opacity-50 pointer-events-none"
+                  )}
                 >
                   {showPassword ? (
                     <EyeSlash size={18} color="currentColor" />
@@ -170,13 +248,19 @@ export default function LoginPage() {
                   )}
                 </button>
               </div>
+              {errors.password && (
+                <p className="text-[11px] text-tertiary">
+                  {errors.password.message}
+                </p>
+              )}
             </div>
 
             <Button
               type="submit"
               variant="primary"
               className="w-full h-12 text-sm font-bold mt-1"
-              disabled={!email || !password}
+              disabled={!isValid || isLoading}
+              isLoading={isSubmitting}
             >
               Sign In
             </Button>
@@ -195,25 +279,13 @@ export default function LoginPage() {
           <Button
             variant="outlined"
             className="w-full h-12 text-sm font-semibold gap-3"
+            disabled={isLoading}
+            isLoading={isGoogleLoading}
+            onClick={handleGoogleSignIn}
           >
-            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-              <path
-                d="M17.64 9.205c0-.639-.057-1.252-.164-1.841H9v3.481h4.844a4.14 4.14 0 0 1-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615Z"
-                fill="#4285F4"
-              />
-              <path
-                d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18Z"
-                fill="#34A853"
-              />
-              <path
-                d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332Z"
-                fill="#FBBC05"
-              />
-              <path
-                d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58Z"
-                fill="#EA4335"
-              />
-            </svg>
+            {!isGoogleLoading && (
+              <Image src="/google.svg" alt="Google" width={18} height={18} />
+            )}
             Continue with Google
           </Button>
 
@@ -230,5 +302,13 @@ export default function LoginPage() {
         </motion.div>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense>
+      <LoginPageInner />
+    </Suspense>
   );
 }

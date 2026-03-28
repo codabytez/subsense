@@ -1,50 +1,50 @@
 "use client";
 
 import Link from "next/link";
+import { useMemo } from "react";
 import { motion } from "framer-motion";
+import { useQuery } from "convex/react";
+import { api } from "@/convex/_generated/api";
 import { RenewalCard } from "./renewal-card";
 
-const renewals = [
-  {
-    id: "1",
-    dateLabel: "Tomorrow",
-    amount: 14.99,
-    name: "Spotify Family",
-    nextBilling: "Oct 14",
-    iconBg: "bg-secondary/20",
-    iconInitial: "S",
-    urgent: true,
-  },
-  {
-    id: "2",
-    dateLabel: "Oct 16",
-    amount: 19.99,
-    name: "Netflix Premium",
-    nextBilling: "Oct 16",
-    iconBg: "bg-tertiary/20",
-    iconInitial: "N",
-  },
-  {
-    id: "3",
-    dateLabel: "Oct 18",
-    amount: 54.99,
-    name: "Adobe All Apps",
-    nextBilling: "Oct 18",
-    iconBg: "bg-primary/20",
-    iconInitial: "A",
-  },
-  {
-    id: "4",
-    dateLabel: "Oct 21",
-    amount: 16.0,
-    name: "Notion Business",
-    nextBilling: "Oct 21",
-    iconBg: "bg-muted/20",
-    iconInitial: "N",
-  },
-];
+function getDateLabel(dateStr: string): { label: string; urgent: boolean } {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const due = new Date(dateStr + "T00:00:00");
+  const diffDays = Math.round(
+    (due.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
+  );
+
+  if (diffDays < 0) return { label: "Overdue", urgent: true };
+  if (diffDays === 0) return { label: "Today", urgent: true };
+  if (diffDays === 1) return { label: "Tomorrow", urgent: true };
+  return {
+    label: due.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+    urgent: false,
+  };
+}
 
 export function UpcomingRenewals() {
+  const subs = useQuery(api.subscriptions.getSubscriptions);
+
+  const upcoming = useMemo(() => {
+    if (!subs) return undefined;
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const in7Days = new Date(today);
+    in7Days.setDate(today.getDate() + 7);
+
+    return subs
+      .filter((s) => {
+        if (s.status === "cancelled" || s.status === "paused") return false;
+        if (!s.nextPaymentDate) return false;
+        const due = new Date(s.nextPaymentDate + "T00:00:00");
+        return due >= today && due <= in7Days;
+      })
+      .sort((a, b) => a.nextPaymentDate.localeCompare(b.nextPaymentDate));
+  }, [subs]);
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 16 }}
@@ -68,12 +68,44 @@ export function UpcomingRenewals() {
         </Link>
       </div>
 
-      {/* Horizontal scroll */}
-      <div className="flex gap-5 overflow-x-auto pb-1 scrollbar-none pt-3 pl-2">
-        {renewals.map((r, i) => (
-          <RenewalCard key={r.id} {...r} index={i} />
-        ))}
-      </div>
+      {upcoming === undefined ? (
+        <div className="flex gap-5 overflow-x-auto pb-1 scrollbar-none pt-3 pl-2">
+          {[1, 2, 3].map((i) => (
+            <div
+              key={i}
+              className="min-w-64 shrink-0 h-40 bg-surface border border-border rounded-xl animate-pulse"
+            />
+          ))}
+        </div>
+      ) : upcoming.length === 0 ? (
+        <p className="text-sm text-muted py-2">
+          No renewals in the next 7 days.
+        </p>
+      ) : (
+        <div className="flex gap-5 overflow-x-auto pb-1 scrollbar-none pt-3 pl-2">
+          {upcoming.map((sub, i) => {
+            const { label, urgent } = getDateLabel(sub.nextPaymentDate);
+            const nextBilling = new Date(
+              sub.nextPaymentDate + "T00:00:00"
+            ).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+
+            return (
+              <RenewalCard
+                key={sub._id}
+                id={sub._id}
+                dateLabel={label}
+                amount={sub.amount}
+                currency={sub.currency}
+                name={sub.name}
+                nextBilling={nextBilling}
+                iconColor={sub.iconColor}
+                urgent={urgent}
+                index={i}
+              />
+            );
+          })}
+        </div>
+      )}
     </motion.div>
   );
 }

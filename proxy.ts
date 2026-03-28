@@ -1,11 +1,27 @@
 import { NextRequest, NextResponse } from "next/server";
 
 export function proxy(request: NextRequest) {
-  if (request.nextUrl.pathname === "/") {
+  const { pathname } = request.nextUrl;
+
+  // Redirect root to login
+  if (pathname === "/") {
     return NextResponse.redirect(new URL("/login", request.url));
   }
+
+  // Protect dashboard and onboarding routes
+  const hasSession =
+    request.cookies.has("better-auth.session_token") ||
+    request.cookies.has("__Secure-better-auth.session_token");
+
+  if (!hasSession) {
+    const loginUrl = new URL("/login", request.url);
+    loginUrl.searchParams.set("next", pathname);
+    return NextResponse.redirect(loginUrl);
+  }
+
+  return NextResponse.next();
 }
 
 export const config = {
-  matcher: ["/"],
+  matcher: ["/", "/dashboard/:path*", "/onboarding/:path*"],
 };

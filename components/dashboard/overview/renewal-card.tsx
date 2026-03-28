@@ -2,16 +2,31 @@
 
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { cn } from "@/lib/utils";
+import type { Id } from "@/convex/_generated/dataModel";
+import { formatAmount } from "@/lib/currency";
+
+function solidColor(rgba: string): string {
+  const m = rgba.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+  return m ? `rgb(${m[1]},${m[2]},${m[3]})` : "#2a2a35";
+}
+
+function getInitials(name: string): string {
+  return name
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0].toUpperCase())
+    .join("");
+}
 
 interface RenewalCardProps {
-  id: string;
+  id: Id<"subscriptions">;
   dateLabel: string;
   amount: number;
+  currency: string;
   name: string;
   nextBilling: string;
-  iconBg: string;
-  iconInitial: string;
+  iconColor: string;
   urgent?: boolean;
   index: number;
 }
@@ -20,13 +35,16 @@ export function RenewalCard({
   id,
   dateLabel,
   amount,
+  currency,
   name,
   nextBilling,
-  iconBg,
-  iconInitial,
+  iconColor,
   urgent,
   index,
 }: RenewalCardProps) {
+  const bg = solidColor(iconColor);
+  const initials = getInitials(name);
+
   return (
     <motion.div
       initial={{ opacity: 0, x: 20 }}
@@ -42,12 +60,10 @@ export function RenewalCard({
         {/* Top row: icon left, date + amount right */}
         <div className="flex items-start justify-between gap-3">
           <div
-            className={cn(
-              "w-12 h-12 rounded-2xl flex items-center justify-center text-base font-bold text-foreground shrink-0",
-              iconBg
-            )}
+            className="w-12 h-12 rounded-2xl flex items-center justify-center text-base font-bold text-white shrink-0"
+            style={{ backgroundColor: bg }}
           >
-            {iconInitial}
+            {initials}
           </div>
 
           <div className="flex flex-col items-end">
@@ -60,7 +76,7 @@ export function RenewalCard({
               {dateLabel}
             </span>
             <span className="text-2xl font-bold text-foreground font-mono">
-              ${amount.toFixed(2)}
+              {formatAmount(amount, currency)}
             </span>
           </div>
         </div>

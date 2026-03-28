@@ -1,12 +1,21 @@
+import { redirect } from "next/navigation";
+import { isAuthenticated, fetchAuthQuery } from "@/lib/auth-server";
+import { api } from "@/convex/_generated/api";
 import { Sidebar } from "@/components/dashboard/sidebar";
 import { BottomNav } from "@/components/dashboard/bottom-nav";
 import Header from "@/components/dashboard/header";
 
-export default function DashboardLayout({
+export default async function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const authed = await isAuthenticated();
+  if (!authed) redirect("/login");
+
+  const user = await fetchAuthQuery(api.users.getCurrentUser);
+  if (!user) redirect("/onboarding");
+
   return (
     <div className="flex h-screen bg-background">
       <div className="hidden md:flex">
