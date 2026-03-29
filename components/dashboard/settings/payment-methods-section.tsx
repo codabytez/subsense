@@ -9,7 +9,6 @@ import {
   Star1,
   Add,
   Bank,
-  Paypal,
   Wallet,
   Card,
 } from "iconsax-reactjs";
@@ -18,6 +17,18 @@ import { toast } from "sonner";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { cn } from "@/lib/utils";
+
+// ── Brand / type icon component ────────────────────────────────
+import mastercardSvg from "@/public/cards/Mastercard.svg";
+import visaSvg from "@/public/cards/Visa.svg";
+import amexSvg from "@/public/cards/Amex.svg";
+import discoverSvg from "@/public/cards/Discover.svg";
+import verveSvg from "@/public/cards/Verve.svg";
+import paypalSvg from "@/public/cards/PayPal.svg";
+import applePaySvg from "@/public/cards/ApplePay.svg";
+import googlePaySvg from "@/public/cards/GooglePay.svg";
+import yandexSvg from "@/public/cards/Yandex.svg";
+import Image from "next/image";
 
 // ── Constants ─────────────────────────────────────────────────
 type PaymentType =
@@ -56,149 +67,6 @@ interface PaymentMethod {
   isDefault: boolean;
 }
 
-// ── Brand / type icon component ────────────────────────────────
-function VisaSvg() {
-  return (
-    <svg viewBox="0 0 48 16" width="36" height="12" aria-label="Visa">
-      <text
-        x="0"
-        y="13"
-        fontFamily="Arial, sans-serif"
-        fontWeight="900"
-        fontStyle="italic"
-        fontSize="16"
-        fill="#1A1F71"
-        letterSpacing="-0.5"
-      >
-        VISA
-      </text>
-    </svg>
-  );
-}
-
-function MastercardSvg() {
-  return (
-    <svg viewBox="0 0 38 24" width="38" height="24" aria-label="Mastercard">
-      <circle cx="14" cy="12" r="12" fill="#EB001B" />
-      <circle cx="24" cy="12" r="12" fill="#F79E1B" />
-      <path d="M19 5.3a12 12 0 0 1 0 13.4A12 12 0 0 1 19 5.3z" fill="#FF5F00" />
-    </svg>
-  );
-}
-
-function AmexSvg() {
-  return (
-    <svg viewBox="0 0 48 16" width="36" height="12" aria-label="Amex">
-      <text
-        x="0"
-        y="13"
-        fontFamily="Arial, sans-serif"
-        fontWeight="800"
-        fontSize="13"
-        fill="#ffffff"
-        letterSpacing="0.5"
-      >
-        AMEX
-      </text>
-    </svg>
-  );
-}
-
-function DiscoverSvg() {
-  return (
-    <svg viewBox="0 0 60 16" width="44" height="12" aria-label="Discover">
-      <text
-        x="0"
-        y="13"
-        fontFamily="Arial, sans-serif"
-        fontWeight="800"
-        fontSize="12"
-        fill="#ffffff"
-        letterSpacing="0.3"
-      >
-        DISCOVER
-      </text>
-    </svg>
-  );
-}
-
-function VerveSvg() {
-  return (
-    <svg viewBox="0 0 44 16" width="38" height="12" aria-label="Verve">
-      <text
-        x="0"
-        y="13"
-        fontFamily="Arial, sans-serif"
-        fontWeight="900"
-        fontSize="13"
-        fill="#ffffff"
-        letterSpacing="0.5"
-      >
-        verve
-      </text>
-    </svg>
-  );
-}
-
-function AppleSvg() {
-  // Apple logo path
-  return (
-    <svg viewBox="0 0 24 24" width="20" height="20" aria-label="Apple Pay">
-      <path
-        fill="#ffffff"
-        d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"
-      />
-    </svg>
-  );
-}
-
-function GooglePaySvg() {
-  return (
-    <svg viewBox="0 0 41 17" width="41" height="17" aria-label="Google Pay">
-      <text
-        x="0"
-        y="13"
-        fontFamily="Arial, sans-serif"
-        fontWeight="700"
-        fontSize="13"
-        fill="#4285F4"
-      >
-        G
-      </text>
-      <text
-        x="10"
-        y="13"
-        fontFamily="Arial, sans-serif"
-        fontWeight="700"
-        fontSize="13"
-        fill="#34A853"
-      >
-        o
-      </text>
-      <text
-        x="18"
-        y="13"
-        fontFamily="Arial, sans-serif"
-        fontWeight="700"
-        fontSize="13"
-        fill="#FBBC05"
-      >
-        o
-      </text>
-      <text
-        x="26"
-        y="13"
-        fontFamily="Arial, sans-serif"
-        fontWeight="700"
-        fontSize="13"
-        fill="#EA4335"
-      >
-        g
-      </text>
-    </svg>
-  );
-}
-
 type MethodIconProps = {
   type: PaymentType;
   brand?: string;
@@ -206,108 +74,48 @@ type MethodIconProps = {
 };
 
 function MethodIcon({ type, brand, size = "md" }: MethodIconProps) {
-  const dim = size === "md" ? "w-11 h-11" : "w-8 h-8";
+  const dim = size === "md" ? "w-7 h-7" : "w-6 h-6";
   const radius = size === "md" ? "rounded-xl" : "rounded-lg";
 
   if (type === "card") {
     if (brand === "Visa") {
-      return (
-        <div
-          className={`${dim} ${radius} bg-white flex items-center justify-center shrink-0`}
-        >
-          <VisaSvg />
-        </div>
-      );
+      return <Image src={visaSvg} alt="Visa" />;
     }
     if (brand === "Mastercard") {
-      return (
-        <div
-          className={`${dim} ${radius} bg-white flex items-center justify-center shrink-0`}
-        >
-          <MastercardSvg />
-        </div>
-      );
+      return <Image src={mastercardSvg} alt="Mastercard" />;
     }
     if (brand === "Amex") {
-      return (
-        <div
-          className={`${dim} ${radius} flex items-center justify-center shrink-0`}
-          style={{ backgroundColor: "#007BC1" }}
-        >
-          <AmexSvg />
-        </div>
-      );
+      return <Image src={amexSvg} alt="Amex" />;
     }
     if (brand === "Discover") {
-      return (
-        <div
-          className={`${dim} ${radius} flex items-center justify-center shrink-0`}
-          style={{ backgroundColor: "#FF6600" }}
-        >
-          <DiscoverSvg />
-        </div>
-      );
+      return <Image src={discoverSvg} alt="Discover" />;
     }
     if (brand === "Verve") {
-      return (
-        <div
-          className={`${dim} ${radius} flex items-center justify-center shrink-0`}
-          style={{ backgroundColor: "#00A86B" }}
-        >
-          <VerveSvg />
-        </div>
-      );
+      return <Image src={verveSvg} alt="Verve" />;
     }
     // Generic card
-    return (
-      <div
-        className={`${dim} ${radius} flex items-center justify-center shrink-0`}
-        style={{ backgroundColor: "#6366F1" }}
-      >
-        <Card size={size === "md" ? 20 : 16} color="#fff" />
-      </div>
-    );
+    return <Image src={yandexSvg} alt="Card" />;
   }
 
   if (type === "paypal") {
-    return (
-      <div
-        className={`${dim} ${radius} flex items-center justify-center shrink-0`}
-        style={{ backgroundColor: "#003087" }}
-      >
-        <Paypal size={size === "md" ? 20 : 16} color="#fff" />
-      </div>
-    );
+    return <Image src={paypalSvg} alt="PayPal" />;
   }
 
   if (type === "apple_pay") {
-    return (
-      <div
-        className={`${dim} ${radius} flex items-center justify-center shrink-0`}
-        style={{ backgroundColor: "#1C1C1E" }}
-      >
-        <AppleSvg />
-      </div>
-    );
+    return <Image src={applePaySvg} alt="Apple Pay" />;
   }
 
   if (type === "google_pay") {
-    return (
-      <div
-        className={`${dim} ${radius} bg-white flex items-center justify-center shrink-0`}
-      >
-        <GooglePaySvg />
-      </div>
-    );
+    return <Image src={googlePaySvg} alt="Google Pay" />;
   }
 
   if (type === "bank") {
     return (
       <div
-        className={`${dim} ${radius} flex items-center justify-center shrink-0`}
+        className="h-6 w-10 rounded flex items-center justify-center shrink-0"
         style={{ backgroundColor: "#22C55E" }}
       >
-        <Bank size={size === "md" ? 20 : 16} color="#fff" />
+        <Bank size={16} color="#fff" />
       </div>
     );
   }
@@ -414,6 +222,100 @@ type FormValues = {
   expiry: string;
 };
 
+const TYPE_META: {
+  value: PaymentType;
+  label: string;
+  icon: React.ReactNode;
+  color: string;
+}[] = [
+  { value: "card", label: "Card", icon: <Card size={28} />, color: "#6366F1" },
+  {
+    value: "paypal",
+    label: "PayPal",
+    icon: <Image src={paypalSvg} alt="PayPal" width={28} height={28} />,
+    color: "#003087",
+  },
+  {
+    value: "apple_pay",
+    label: "Apple Pay",
+    icon: <Image src={applePaySvg} alt="Apple Pay" width={28} height={28} />,
+    color: "#1C1C1E",
+  },
+  {
+    value: "google_pay",
+    label: "Google Pay",
+    icon: <Image src={googlePaySvg} alt="Google Pay" width={28} height={28} />,
+    color: "#4285F4",
+  },
+  { value: "bank", label: "Bank", icon: <Bank size={28} />, color: "#22C55E" },
+  {
+    value: "other",
+    label: "Other",
+    icon: <Wallet size={28} />,
+    color: "#64748B",
+  },
+];
+
+/** Live card preview */
+function CardPreview({ form }: { form: FormValues }) {
+  const isCard = form.type === "card";
+  const displayName = isCard ? form.brand || "Card" : typeLabel(form.type);
+  const nickname = form.label.trim();
+
+  const bgMap: Record<string, string> = {
+    Visa: "linear-gradient(135deg, #1A1F71 0%, #3451B2 100%)",
+    Mastercard: "linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)",
+    Amex: "linear-gradient(135deg, #007BC1 0%, #0056A0 100%)",
+    Discover: "linear-gradient(135deg, #FF6600 0%, #cc5200 100%)",
+    Verve: "linear-gradient(135deg, #00A86B 0%, #007a4d 100%)",
+    Other: "linear-gradient(135deg, #374151 0%, #1f2937 100%)",
+  };
+
+  const typeBgMap: Record<string, string> = {
+    paypal: "linear-gradient(135deg, #003087 0%, #001f5e 100%)",
+    apple_pay: "linear-gradient(135deg, #1C1C1E 0%, #000 100%)",
+    google_pay: "linear-gradient(135deg, #4285F4 0%, #1a56cc 100%)",
+    bank: "linear-gradient(135deg, #064e3b 0%, #022c22 100%)",
+    other: "linear-gradient(135deg, #374151 0%, #1f2937 100%)",
+  };
+
+  const bg = isCard
+    ? (bgMap[form.brand] ?? "linear-gradient(135deg, #374151 0%, #1f2937 100%)")
+    : (typeBgMap[form.type] ??
+      "linear-gradient(135deg, #374151 0%, #1f2937 100%)");
+
+  return (
+    <div
+      className="w-full rounded-2xl p-5 flex flex-col justify-between relative overflow-hidden"
+      style={{ background: bg, minHeight: 130 }}
+    >
+      {/* Decorative circles */}
+      <div className="absolute -top-8 -right-8 w-36 h-36 rounded-full opacity-10 bg-white" />
+      <div className="absolute -bottom-10 -left-6 w-28 h-28 rounded-full opacity-10 bg-white" />
+
+      <div className="relative flex items-start justify-between">
+        <MethodIcon type={form.type} brand={form.brand} size="sm" />
+        {isCard && form.last4 && (
+          <span className="font-mono text-xs text-white/70 tracking-widest">
+            ···· {form.last4}
+          </span>
+        )}
+      </div>
+
+      <div className="relative mt-4">
+        <p className="text-white font-bold text-base leading-tight">
+          {nickname || displayName}
+        </p>
+        {isCard && form.expiry && (
+          <p className="text-white/50 text-[10px] font-semibold tracking-widest uppercase mt-0.5">
+            Exp {form.expiry}
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function PaymentMethodModal({
   initial,
   onSave,
@@ -431,139 +333,167 @@ function PaymentMethodModal({
 
   const isCard = form.type === "card";
   const isValid = isCard ? form.brand.length > 0 : form.label.trim().length > 0;
+  const isEdit = !!(initial.label || initial.brand);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
       <div
         className="absolute inset-0 bg-background/80 backdrop-blur-sm"
         onClick={onClose}
       />
-      <div className="relative bg-surface border border-border rounded-2xl p-6 w-full max-w-sm flex flex-col gap-5 shadow-xl">
-        <h3 className="text-base font-black text-foreground">
-          {initial.label || initial.brand
-            ? "Edit payment method"
-            : "New payment method"}
-        </h3>
-
-        {/* Type selector */}
-        <div className="flex flex-col gap-1.5">
-          <label className="text-[10px] font-bold tracking-widest uppercase text-muted">
-            Type
-          </label>
-          <div className="flex flex-wrap gap-1.5">
-            {TYPES.map(({ value, label }) => (
-              <button
-                key={value}
-                type="button"
-                onClick={() => set({ type: value })}
-                className={cn(
-                  "px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all",
-                  form.type === value
-                    ? "border-primary/60 bg-primary/10 text-foreground"
-                    : "border-border text-muted hover:text-foreground"
-                )}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
+      <div className="relative bg-surface border border-border rounded-t-3xl sm:rounded-2xl w-full sm:max-w-sm flex flex-col shadow-2xl max-h-[92dvh] overflow-y-auto">
+        {/* Drag handle on mobile */}
+        <div className="sm:hidden flex justify-center pt-3 pb-1 shrink-0">
+          <div className="w-10 h-1 rounded-full bg-border" />
         </div>
 
-        {/* Card-specific fields */}
-        {isCard && (
-          <>
-            <div className="flex flex-col gap-1.5">
-              <label className="text-[10px] font-bold tracking-widest uppercase text-muted">
-                Brand
-              </label>
-              <div className="flex flex-wrap gap-1.5">
-                {CARD_BRANDS.map((b) => (
+        <div className="flex flex-col gap-5 p-6">
+          <div className="flex items-center justify-between">
+            <h3 className="text-base font-black text-foreground">
+              {isEdit ? "Edit method" : "Add payment method"}
+            </h3>
+            <button
+              onClick={onClose}
+              className="w-8 h-8 flex items-center justify-center rounded-xl hover:bg-border/50 text-muted transition-colors text-lg leading-none"
+            >
+              ×
+            </button>
+          </div>
+
+          {/* Live preview */}
+          <CardPreview form={form} />
+
+          {/* Type selector — icon cards */}
+          <div className="flex flex-col gap-2">
+            <label className="text-[10px] font-bold tracking-widest uppercase text-muted">
+              Type
+            </label>
+            <div className="grid grid-cols-3 gap-2">
+              {TYPE_META.map(({ value, label, icon: Icon }) => {
+                const active = form.type === value;
+                return (
                   <button
-                    key={b}
+                    key={value}
                     type="button"
-                    onClick={() => set({ brand: b })}
+                    onClick={() => set({ type: value, brand: "", label: "" })}
                     className={cn(
-                      "px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all",
-                      form.brand === b
-                        ? "border-primary/60 bg-primary/10 text-foreground"
-                        : "border-border text-muted hover:text-foreground"
+                      "flex flex-col items-center gap-1.5 py-3 px-2 rounded-xl border text-xs font-semibold transition-all",
+                      active
+                        ? "border-primary/50 bg-primary/10 text-foreground"
+                        : "border-border text-muted hover:text-foreground hover:border-border/80"
                     )}
                   >
-                    {b}
+                    {Icon}
+                    {label}
                   </button>
-                ))}
-              </div>
+                );
+              })}
             </div>
+          </div>
 
-            <div className="flex gap-3">
-              <div className="flex flex-col gap-1.5 flex-1">
+          {/* Card-specific fields */}
+          {isCard && (
+            <>
+              <div className="flex flex-col gap-2">
                 <label className="text-[10px] font-bold tracking-widest uppercase text-muted">
-                  Last 4 digits
+                  Brand
                 </label>
-                <input
-                  value={form.last4}
-                  onChange={(e) =>
-                    set({
-                      last4: e.target.value.replace(/\D/g, "").slice(0, 4),
-                    })
-                  }
-                  className="h-11 w-full bg-neutral border border-border rounded-xl px-4 text-sm text-foreground placeholder:text-muted/40 outline-none focus:border-primary/50 transition-colors font-mono tracking-widest"
-                  placeholder="4242"
-                  maxLength={4}
-                />
+                <div className="flex flex-wrap gap-2">
+                  {CARD_BRANDS.map((b) => {
+                    const active = form.brand === b;
+                    return (
+                      <button
+                        key={b}
+                        type="button"
+                        onClick={() => set({ brand: b })}
+                        className={cn(
+                          "flex items-center gap-2 pl-1 pr-3 py-1 rounded-xl border text-xs font-semibold transition-all",
+                          active
+                            ? "border-primary/50 bg-primary/10 text-foreground"
+                            : "border-border text-muted hover:text-foreground"
+                        )}
+                      >
+                        <MethodIcon type="card" brand={b} size="sm" />
+                        {b}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
-              <div className="flex flex-col gap-1.5 w-24">
-                <label className="text-[10px] font-bold tracking-widest uppercase text-muted">
-                  Expiry
-                </label>
-                <input
-                  value={form.expiry}
-                  onChange={(e) => {
-                    let v = e.target.value.replace(/\D/g, "");
-                    if (v.length >= 2) v = v.slice(0, 2) + "/" + v.slice(2, 4);
-                    set({ expiry: v });
-                  }}
-                  className="h-11 w-full bg-neutral border border-border rounded-xl px-4 text-sm text-foreground placeholder:text-muted/40 outline-none focus:border-primary/50 transition-colors font-mono"
-                  placeholder="MM/YY"
-                  maxLength={5}
-                />
+
+              <div className="flex gap-3">
+                <div className="flex flex-col gap-1.5 flex-1">
+                  <label className="text-[10px] font-bold tracking-widest uppercase text-muted">
+                    Last 4 digits
+                  </label>
+                  <input
+                    value={form.last4}
+                    onChange={(e) =>
+                      set({
+                        last4: e.target.value.replace(/\D/g, "").slice(0, 4),
+                      })
+                    }
+                    className="h-11 w-full bg-neutral border border-border rounded-xl px-4 text-sm text-foreground placeholder:text-muted/40 outline-none focus:border-primary/50 transition-colors font-mono tracking-widest"
+                    placeholder="4242"
+                    maxLength={4}
+                  />
+                </div>
+                <div className="flex flex-col gap-1.5 w-24">
+                  <label className="text-[10px] font-bold tracking-widest uppercase text-muted">
+                    Expiry
+                  </label>
+                  <input
+                    value={form.expiry}
+                    onChange={(e) => {
+                      let v = e.target.value.replace(/\D/g, "");
+                      if (v.length >= 2)
+                        v = v.slice(0, 2) + "/" + v.slice(2, 4);
+                      set({ expiry: v });
+                    }}
+                    className="h-11 w-full bg-neutral border border-border rounded-xl px-4 text-sm text-foreground placeholder:text-muted/40 outline-none focus:border-primary/50 transition-colors font-mono"
+                    placeholder="MM/YY"
+                    maxLength={5}
+                  />
+                </div>
               </div>
-            </div>
-          </>
-        )}
+            </>
+          )}
 
-        {/* Label / nickname */}
-        <div className="flex flex-col gap-1.5">
-          <label className="text-[10px] font-bold tracking-widest uppercase text-muted">
-            {isCard ? "Nickname (optional)" : "Label"}
-          </label>
-          <input
-            value={form.label}
-            onChange={(e) => set({ label: e.target.value })}
-            className="h-11 w-full bg-neutral border border-border rounded-xl px-4 text-sm text-foreground placeholder:text-muted/40 outline-none focus:border-primary/50 transition-colors"
-            placeholder={
-              isCard ? "e.g. Personal card" : `e.g. My ${typeLabel(form.type)}`
-            }
-            maxLength={40}
-            autoFocus={!isCard}
-          />
-        </div>
+          {/* Label / nickname */}
+          <div className="flex flex-col gap-1.5">
+            <label className="text-[10px] font-bold tracking-widest uppercase text-muted">
+              {isCard ? "Nickname (optional)" : "Label"}
+            </label>
+            <input
+              value={form.label}
+              onChange={(e) => set({ label: e.target.value })}
+              className="h-11 w-full bg-neutral border border-border rounded-xl px-4 text-sm text-foreground placeholder:text-muted/40 outline-none focus:border-primary/50 transition-colors"
+              placeholder={
+                isCard
+                  ? "e.g. Personal card"
+                  : `e.g. My ${typeLabel(form.type)}`
+              }
+              maxLength={40}
+              autoFocus={!isCard}
+            />
+          </div>
 
-        <div className="flex gap-2 pt-1">
-          <button
-            onClick={onClose}
-            className="flex-1 h-11 rounded-xl border border-border text-sm font-semibold text-muted hover:text-foreground transition-colors"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={() => onSave(form)}
-            disabled={!isValid || isSaving}
-            className="flex-1 h-11 rounded-xl text-sm font-bold text-white transition-opacity disabled:opacity-50"
-            style={{ backgroundColor: "var(--color-primary)" }}
-          >
-            {isSaving ? "Saving…" : "Save"}
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={onClose}
+              className="flex-1 h-11 rounded-xl border border-border text-sm font-semibold text-muted hover:text-foreground transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={() => onSave(form)}
+              disabled={!isValid || isSaving}
+              className="flex-1 h-11 rounded-xl text-sm font-bold text-white transition-opacity disabled:opacity-50"
+              style={{ backgroundColor: "var(--color-primary)" }}
+            >
+              {isSaving ? "Saving…" : "Save"}
+            </button>
+          </div>
         </div>
       </div>
     </div>

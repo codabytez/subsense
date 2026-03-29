@@ -24,4 +24,18 @@ crons.daily(
   internal.paymentLogs.processAutoPayments
 );
 
+// Every day at 1am UTC — auto-expire one-off subscriptions past their end date
+crons.daily(
+  "auto-expire-one-offs",
+  { hourUTC: 1, minuteUTC: 0 },
+  internal.subscriptions.autoExpireOneOffs
+);
+
+// Every day at 1am UTC — lapse recurring subscriptions 15+ days overdue
+crons.daily(
+  "auto-lapse-overdue",
+  { hourUTC: 1, minuteUTC: 30 },
+  internal.subscriptions.autoLapseOverdue
+);
+
 export default crons;

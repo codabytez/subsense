@@ -37,7 +37,14 @@ export function UpcomingRenewals() {
 
     return subs
       .filter((s) => {
-        if (s.status === "cancelled" || s.status === "paused") return false;
+        if (
+          s.status === "cancelled" ||
+          s.status === "paused" ||
+          s.status === "expired" ||
+          s.status === "lapsed"
+        )
+          return false;
+        if (s.cycle === "one-off") return false;
         if (!s.nextPaymentDate) return false;
         const due = new Date(s.nextPaymentDate + "T00:00:00");
         return due >= today && due <= in7Days;

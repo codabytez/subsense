@@ -36,16 +36,17 @@ export function StatsPanel() {
     const newCount = active.filter(
       (s) => s._creationTime >= sevenDaysAgo
     ).length;
-    const annualTotal = active.reduce(
+    const recurring = active.filter((s) => s.cycle !== "one-off");
+    const annualTotal = recurring.reduce(
       (sum, s) => sum + normalizeToMonthly(s) * 12,
       0
     );
     const highestSub =
-      active.length > 0
-        ? active.reduce(
+      recurring.length > 0
+        ? recurring.reduce(
             (max, s) =>
               normalizeToMonthly(s) > normalizeToMonthly(max) ? s : max,
-            active[0]
+            recurring[0]
           )
         : null;
 

@@ -1,5 +1,6 @@
 export const DEFAULT_CATEGORIES = [
   { name: "Entertainment", color: "#E50914" },
+  { name: "Social Media", color: "#F1556C" },
   { name: "Music", color: "#1DB954" },
   { name: "Software & Apps", color: "#6366F1" },
   { name: "Cloud Storage", color: "#3478F6" },

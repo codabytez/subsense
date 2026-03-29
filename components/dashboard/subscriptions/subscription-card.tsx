@@ -4,6 +4,7 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { formatAmount } from "@/lib/currency";
+import { ServiceIcon } from "@/components/ui/service-icon";
 
 const statusConfig: Record<
   SubscriptionStatus,
@@ -33,6 +34,18 @@ const statusConfig: Record<
     badge: "bg-tertiary/10",
     text: "text-tertiary",
   },
+  expired: {
+    label: "EXPIRED",
+    dot: "bg-muted",
+    badge: "bg-muted/10",
+    text: "text-muted",
+  },
+  lapsed: {
+    label: "LAPSED",
+    dot: "bg-tertiary",
+    badge: "bg-tertiary/10",
+    text: "text-tertiary",
+  },
 };
 
 const cycleLabel: Record<BillingCycle, string> = {
@@ -42,6 +55,7 @@ const cycleLabel: Record<BillingCycle, string> = {
   trial: "TRIAL ENDS",
   "usage-based": "USAGE-BASED",
   custom: "CUSTOM",
+  "one-off": "ONE-OFF",
 };
 
 const renewalLabelDisplay: Record<RenewalLabel, string> = {
@@ -49,6 +63,7 @@ const renewalLabelDisplay: Record<RenewalLabel, string> = {
   RESUME_ON: "RESUME ON",
   NEXT_BILLING: "NEXT BILLING",
   TRIAL_ENDS: "TRIAL ENDS",
+  EXPIRES_IN: "EXPIRES IN",
 };
 
 interface Props {
@@ -72,13 +87,10 @@ export function SubscriptionCard({
     renewalLabel,
     renewalValue,
     renewalUrgent,
-    iconBg,
     iconColor,
     iconInitial,
     currency = "USD",
   } = subscription;
-
-  const iconStyle = iconColor ? { backgroundColor: iconColor } : undefined;
 
   const s = statusConfig[status];
 
@@ -96,15 +108,13 @@ export function SubscriptionCard({
           className="bg-surface border border-border rounded-xl px-4 py-3 flex items-start gap-4 hover:border-primary/30 transition-colors"
         >
           {/* Icon */}
-          <div
-            className={cn(
-              "size-10 rounded-xl flex items-center justify-center text-sm font-bold text-foreground shrink-0",
-              iconBg
-            )}
-            style={iconStyle}
-          >
-            {iconInitial}
-          </div>
+          <ServiceIcon
+            name={name}
+            iconColor={iconColor}
+            iconInitial={iconInitial}
+            className="size-10 rounded-xl text-sm"
+            initialClassName="text-sm"
+          />
 
           {/* Name + category */}
           <div className="flex flex-col gap-0.5 min-w-0 flex-1">
@@ -171,15 +181,13 @@ export function SubscriptionCard({
       >
         {/* Top row — icon + status badge */}
         <div className="flex items-start justify-between">
-          <div
-            className={cn(
-              "w-14 h-14 rounded-2xl flex items-center justify-center text-foreground text-xl font-bold shrink-0",
-              iconBg
-            )}
-            style={iconStyle}
-          >
-            {iconInitial}
-          </div>
+          <ServiceIcon
+            name={name}
+            iconColor={iconColor}
+            iconInitial={iconInitial}
+            className="w-14 h-14 rounded-2xl"
+            initialClassName="text-xl"
+          />
 
           <span
             className={cn(

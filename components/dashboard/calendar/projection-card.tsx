@@ -34,7 +34,14 @@ export function ProjectionCard({ subs, userCurrency }: ProjectionCardProps) {
   const { total, count } = useMemo(() => {
     if (!subs) return { total: 0, count: 0 };
     const dueThisMonth = subs.filter((s) => {
-      if (s.status === "cancelled" || s.status === "paused") return false;
+      if (
+        s.status === "cancelled" ||
+        s.status === "paused" ||
+        s.status === "expired" ||
+        s.status === "lapsed"
+      )
+        return false;
+      if (s.cycle === "one-off") return false;
       if (!s.nextPaymentDate) return false;
       const due = new Date(s.nextPaymentDate);
       return due.getFullYear() === year && due.getMonth() === currentMonth;

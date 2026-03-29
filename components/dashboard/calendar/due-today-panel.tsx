@@ -7,6 +7,7 @@ import { TickCircle } from "iconsax-reactjs";
 import type { CalendarEvent } from "./calendar-grid";
 import { PaymentConfirmModal } from "./payment-confirm-modal";
 import { formatAmount } from "@/lib/currency";
+import { ServiceIcon } from "@/components/ui/service-icon";
 
 function cycleShort(cycle: string): string {
   switch (cycle) {
@@ -21,20 +22,13 @@ function cycleShort(cycle: string): string {
   }
 }
 
-function solidColor(rgba: string): string {
-  const m = rgba.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
-  return m ? `rgb(${m[1]},${m[2]},${m[3]})` : "#2a2a35";
-}
-
-function iconFromEvent(event: CalendarEvent) {
-  const bg = solidColor(event.iconColor);
-  const initials = event.name
+function getInitials(name: string): string {
+  return name
     .split(" ")
     .filter(Boolean)
     .slice(0, 2)
     .map((w) => w[0].toUpperCase())
     .join("");
-  return { bg, color: "#fff", initials };
 }
 
 function getDayLabel(date: Date | null): string {
@@ -96,9 +90,9 @@ export function DueTodayPanel({ events, date }: DueTodayPanelProps) {
             </motion.p>
           ) : (
             events.map((item, i) => {
-              const icon = iconFromEvent(item);
               const paid = paidIds.has(item.id);
               const isAuto = item.paymentMode === "auto";
+              const isOneOff = item.isOneOff ?? false;
 
               return (
                 <motion.div
@@ -118,12 +112,13 @@ export function DueTodayPanel({ events, date }: DueTodayPanelProps) {
                       style={{ backgroundColor: "var(--color-sidebar-active)" }}
                     >
                       {/* Icon */}
-                      <div
-                        className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 text-sm font-black"
-                        style={{ backgroundColor: icon.bg, color: icon.color }}
-                      >
-                        {icon.initials}
-                      </div>
+                      <ServiceIcon
+                        name={item.name}
+                        iconColor={item.iconColor}
+                        iconInitial={getInitials(item.name)}
+                        className="w-12 h-12 rounded-2xl shrink-0"
+                        initialClassName="text-sm"
+                      />
 
                       {/* Name + amount */}
                       <div className="flex-1 min-w-0">
@@ -148,6 +143,17 @@ export function DueTodayPanel({ events, date }: DueTodayPanelProps) {
                             Paid
                           </span>
                         </div>
+                      ) : isOneOff ? (
+                        <span
+                          className="text-[10px] font-bold tracking-widest uppercase px-2.5 py-1 rounded shrink-0"
+                          style={{
+                            backgroundColor: "rgba(160,160,175,0.1)",
+                            color: "var(--color-muted)",
+                            border: "1px solid rgba(160,160,175,0.2)",
+                          }}
+                        >
+                          Expires
+                        </span>
                       ) : isAuto ? (
                         <span
                           className="text-[10px] font-bold tracking-widest uppercase px-2.5 py-1 rounded shrink-0"
@@ -165,7 +171,7 @@ export function DueTodayPanel({ events, date }: DueTodayPanelProps) {
                     </Link>
 
                     {/* Confirm button sits outside the Link */}
-                    {!paid && !isAuto && (
+                    {!paid && !isAuto && !isOneOff && (
                       <button
                         onClick={() => setModalSub(item)}
                         className="absolute right-4 top-1/2 -translate-y-1/2 text-[11px] font-bold tracking-wide px-3 py-2 rounded shrink-0 hover:opacity-90 transition-opacity text-white"

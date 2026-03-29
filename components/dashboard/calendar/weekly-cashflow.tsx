@@ -42,7 +42,10 @@ export function WeeklyCashFlow({ subs }: WeeklyCashFlowProps) {
         (s) =>
           s.nextPaymentDate === key &&
           s.status !== "cancelled" &&
-          s.status !== "paused"
+          s.status !== "paused" &&
+          s.status !== "expired" &&
+          s.status !== "lapsed" &&
+          s.cycle !== "one-off"
       );
       const fixed = dayEvents
         .filter((s) => s.paymentMode === "auto")

@@ -47,6 +47,7 @@ export interface CalendarEvent {
   cycle: string;
   paymentMode: "auto" | "manual";
   iconColor: string;
+  isOneOff?: boolean;
   paymentMethodId?: string;
   notes?: string;
 }

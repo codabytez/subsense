@@ -13,6 +13,7 @@ import type { Id } from "@/convex/_generated/dataModel";
 import { DEFAULT_CATEGORIES } from "@/lib/default-categories";
 import { getCurrencySymbol } from "@/lib/currency";
 import { DatePicker } from "@/components/ui/date-picker";
+import { PaymentMethodLogo } from "@/components/ui/payment-method-logo";
 
 // ── Types ─────────────────────────────────────────────────────
 type BillingCycle =
@@ -21,7 +22,8 @@ type BillingCycle =
   | "annual"
   | "trial"
   | "usage-based"
-  | "custom";
+  | "custom"
+  | "one-off";
 
 type SubscriptionStatus = "active" | "trial" | "paused" | "cancelled";
 
@@ -33,6 +35,7 @@ const BILLING_CYCLES: { value: BillingCycle; label: string }[] = [
   { value: "trial", label: "Trial" },
   { value: "usage-based", label: "Usage" },
   { value: "custom", label: "Custom" },
+  { value: "one-off", label: "One-off" },
 ];
 
 const CUSTOM_INTERVALS = [
@@ -166,7 +169,7 @@ function Toggle({
 }
 
 const inputCls =
-  "w-full bg-background border border-border rounded-xl px-4 py-3 text-sm text-foreground placeholder:text-muted/40 focus:outline-none focus:border-primary/50 transition-colors";
+  "w-full bg-background border border-border rounded px-4 py-3 text-sm text-foreground placeholder:text-muted/40 focus:outline-none focus:border-primary/50 transition-colors";
 
 // ── Props ─────────────────────────────────────────────────────
 export interface SubscriptionFormModalProps {
@@ -194,6 +197,8 @@ export function SubscriptionFormModal({
   const isEdit = Boolean(editId);
   const [form, setForm] = useState<SubscriptionFormData>(DEFAULT_FORM);
   const [isSaving, setIsSaving] = useState(false);
+  const [customReminderNum, setCustomReminderNum] = useState("2");
+  const [customReminderUnit, setCustomReminderUnit] = useState<"d" | "w">("d");
   const pmInitialized = useRef(false);
   const editInitialized = useRef<string | undefined>(undefined);
 
@@ -504,11 +509,20 @@ export function SubscriptionFormModal({
               <section className="flex flex-col gap-3">
                 <SectionLabel>Schedule</SectionLabel>
                 <div className="flex flex-col gap-1.5">
-                  <FieldLabel>Next Payment Date</FieldLabel>
+                  <FieldLabel>
+                    {form.cycle === "one-off"
+                      ? "End Date"
+                      : "Next Payment Date"}
+                  </FieldLabel>
                   <DatePicker
                     value={form.nextPaymentDate}
                     onChange={(v) => set("nextPaymentDate", v)}
                   />
+                  {form.cycle === "one-off" && (
+                    <p className="text-[11px] text-muted">
+                      The date this service or license expires.
+                    </p>
+                  )}
                 </div>
               </section>
 
@@ -579,10 +593,13 @@ export function SubscriptionFormModal({
                               : "border-border text-muted hover:text-foreground"
                           )}
                         >
-                          <span className="w-7 h-7 rounded-lg bg-border/50 flex items-center justify-center text-[10px] font-black text-foreground shrink-0 uppercase">
-                            {pm.type === "card" && pm.brand
-                              ? pm.brand.slice(0, 2)
-                              : pm.type.slice(0, 2)}
+                          <span className="w-7 h-7 rounded-lg bg-border/50 flex items-center justify-center shrink-0">
+                            <PaymentMethodLogo
+                              type={pm.type}
+                              brand={pm.brand}
+                              width={24}
+                              height={15}
+                            />
                           </span>
                           <span className="flex-1 truncate">{display}</span>
                           {pm.isDefault && (
@@ -596,32 +613,34 @@ export function SubscriptionFormModal({
                   </div>
                 )}
 
-                {/* Payment mode */}
-                <div className="flex flex-col gap-1.5 mt-1">
-                  <FieldLabel>Payment Mode</FieldLabel>
-                  <div className="grid grid-cols-2 gap-2">
-                    {(["manual", "auto"] as const).map((mode) => (
-                      <button
-                        key={mode}
-                        type="button"
-                        onClick={() => set("paymentMode", mode)}
-                        className={cn(
-                          "py-2.5 rounded-xl text-xs font-bold transition-colors",
-                          form.paymentMode === mode
-                            ? "bg-primary text-white"
-                            : "bg-background border border-border text-muted hover:text-foreground"
-                        )}
-                      >
-                        {mode === "auto" ? "Auto-Pay" : "Manual"}
-                      </button>
-                    ))}
+                {/* Payment mode — hidden for one-offs */}
+                {form.cycle !== "one-off" && (
+                  <div className="flex flex-col gap-1.5 mt-1">
+                    <FieldLabel>Payment Mode</FieldLabel>
+                    <div className="grid grid-cols-2 gap-2">
+                      {(["manual", "auto"] as const).map((mode) => (
+                        <button
+                          key={mode}
+                          type="button"
+                          onClick={() => set("paymentMode", mode)}
+                          className={cn(
+                            "py-2.5 rounded-xl text-xs font-bold transition-colors",
+                            form.paymentMode === mode
+                              ? "bg-primary text-white"
+                              : "bg-background border border-border text-muted hover:text-foreground"
+                          )}
+                        >
+                          {mode === "auto" ? "Auto-Pay" : "Manual"}
+                        </button>
+                      ))}
+                    </div>
+                    <p className="text-[11px] text-muted">
+                      {form.paymentMode === "auto"
+                        ? "Renewal date auto-advances when payment is due."
+                        : "You confirm each payment manually when it's due."}
+                    </p>
                   </div>
-                  <p className="text-[11px] text-muted">
-                    {form.paymentMode === "auto"
-                      ? "Renewal date auto-advances when payment is due."
-                      : "You confirm each payment manually when it's due."}
-                  </p>
-                </div>
+                )}
               </section>
 
               {/* ── REMINDERS ────────────────────────────────── */}
@@ -640,23 +659,100 @@ export function SubscriptionFormModal({
                       initial={{ opacity: 0, height: 0 }}
                       animate={{ opacity: 1, height: "auto" }}
                       exit={{ opacity: 0, height: 0 }}
-                      className="flex gap-2 overflow-hidden"
+                      className="flex flex-col gap-3 overflow-hidden"
                     >
-                      {REMINDER_INTERVALS.map(({ value, label }) => (
-                        <button
-                          key={value}
+                      {/* Presets */}
+                      <div className="flex gap-2">
+                        {REMINDER_INTERVALS.map(({ value, label }) => (
+                          <button
+                            key={value}
+                            type="button"
+                            onClick={() => toggleReminderInterval(value)}
+                            className={cn(
+                              "flex-1 py-2.5 rounded-xl text-xs font-bold tracking-wide transition-colors",
+                              form.reminderIntervals.includes(value)
+                                ? "bg-primary/20 text-primary border border-primary/30"
+                                : "bg-background border border-border text-muted hover:text-foreground"
+                            )}
+                          >
+                            {label}
+                          </button>
+                        ))}
+                      </div>
+
+                      {/* Custom chips */}
+                      {form.reminderIntervals.filter(
+                        (v) => !REMINDER_INTERVALS.find((r) => r.value === v)
+                      ).length > 0 && (
+                        <div className="flex flex-wrap gap-2">
+                          {form.reminderIntervals
+                            .filter(
+                              (v) =>
+                                !REMINDER_INTERVALS.find((r) => r.value === v)
+                            )
+                            .map((v) => {
+                              const m = v.match(/^(\d+)(d|w)$/);
+                              const label = m
+                                ? `${m[1]} ${m[2] === "w" ? "Week" : "Day"}${parseInt(m[1]) !== 1 ? "s" : ""}`
+                                : v;
+                              return (
+                                <span
+                                  key={v}
+                                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-primary/20 text-primary border border-primary/30"
+                                >
+                                  {label}
+                                  <button
+                                    type="button"
+                                    onClick={() => toggleReminderInterval(v)}
+                                    className="hover:opacity-70 transition-opacity leading-none"
+                                  >
+                                    ×
+                                  </button>
+                                </span>
+                              );
+                            })}
+                        </div>
+                      )}
+
+                      {/* Custom input */}
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          placeholder="e.g. 5"
+                          value={customReminderNum}
+                          onChange={(e) =>
+                            setCustomReminderNum(
+                              e.target.value.replace(/[^0-9]/g, "")
+                            )
+                          }
+                          className={cn(inputCls, "w-20 shrink-0")}
+                        />
+                        <Select
+                          value={customReminderUnit}
+                          onChange={(v) =>
+                            setCustomReminderUnit(v as "d" | "w")
+                          }
+                          options={[
+                            { value: "d", label: "Days before" },
+                            { value: "w", label: "Weeks before" },
+                          ]}
+                          className="flex-1"
+                        />
+                        <Button
                           type="button"
-                          onClick={() => toggleReminderInterval(value)}
-                          className={cn(
-                            "flex-1 py-2.5 rounded-xl text-xs font-bold tracking-wide transition-colors",
-                            form.reminderIntervals.includes(value)
-                              ? "bg-primary/20 text-primary border border-primary/30"
-                              : "bg-background border border-border text-muted hover:text-foreground"
-                          )}
+                          onClick={() => {
+                            const n = parseInt(customReminderNum);
+                            if (!n || n < 1) return;
+                            const val = `${n}${customReminderUnit}`;
+                            if (!form.reminderIntervals.includes(val))
+                              toggleReminderInterval(val);
+                          }}
+                          className="h-full"
                         >
-                          {label}
-                        </button>
-                      ))}
+                          Add
+                        </Button>
+                      </div>
                     </motion.div>
                   )}
                 </AnimatePresence>
@@ -666,7 +762,10 @@ export function SubscriptionFormModal({
               <section className="flex flex-col gap-3">
                 <SectionLabel>Operational Status</SectionLabel>
                 <div className="grid grid-cols-4 gap-2">
-                  {STATUS_OPTIONS.map(({ value, label, activeClass }) => (
+                  {STATUS_OPTIONS.filter(
+                    ({ value }) =>
+                      form.cycle !== "one-off" || value !== "paused"
+                  ).map(({ value, label, activeClass }) => (
                     <button
                       key={value}
                       type="button"

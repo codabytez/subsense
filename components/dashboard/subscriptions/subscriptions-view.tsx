@@ -30,7 +30,7 @@ function getRenewal(sub: Doc<"subscriptions">): {
   if (sub.status === "paused") {
     return {
       renewalLabel: "RESUME_ON",
-      renewalValue: "Manual",
+      renewalValue: "Paused",
       renewalUrgent: false,
     };
   }
@@ -38,6 +38,20 @@ function getRenewal(sub: Doc<"subscriptions">): {
     return {
       renewalLabel: "NEXT_BILLING",
       renewalValue: "Cancelled",
+      renewalUrgent: false,
+    };
+  }
+  if (sub.status === "lapsed") {
+    return {
+      renewalLabel: "NEXT_BILLING",
+      renewalValue: "Lapsed",
+      renewalUrgent: true,
+    };
+  }
+  if (sub.status === "expired") {
+    return {
+      renewalLabel: "EXPIRES_IN",
+      renewalValue: "Expired",
       renewalUrgent: false,
     };
   }
@@ -56,13 +70,17 @@ function getRenewal(sub: Doc<"subscriptions">): {
   due.setHours(0, 0, 0, 0);
   const diffDays = Math.round((due.getTime() - today.getTime()) / 86_400_000);
 
-  const label: RenewalLabel =
-    sub.status === "trial" ? "TRIAL_ENDS" : "RENEWS_IN";
+  const isOneOff = sub.cycle === "one-off";
+  const label: RenewalLabel = isOneOff
+    ? "EXPIRES_IN"
+    : sub.status === "trial"
+      ? "TRIAL_ENDS"
+      : "RENEWS_IN";
 
   if (diffDays < 0) {
     return {
       renewalLabel: label,
-      renewalValue: "Overdue",
+      renewalValue: isOneOff ? "Expired" : "Overdue",
       renewalUrgent: true,
     };
   }
@@ -135,7 +153,14 @@ export function SubscriptionsView() {
   const activeCount = subscriptions.filter((s) => s.status === "active").length;
 
   const totalMonthly = subscriptions
-    .filter((s) => s.status !== "paused" && s.status !== "cancelled")
+    .filter(
+      (s) =>
+        s.status !== "paused" &&
+        s.status !== "cancelled" &&
+        s.status !== "expired" &&
+        s.status !== "lapsed" &&
+        s.cycle !== "one-off"
+    )
     .reduce((sum, s) => {
       if (s.cycle === "annual") return sum + s.amount / 12;
       if (s.cycle === "weekly") return sum + s.amount * 4.33;

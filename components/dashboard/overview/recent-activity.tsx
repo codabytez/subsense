@@ -2,9 +2,11 @@
 
 import Link from "next/link";
 import { motion } from "framer-motion";
+import { format, parseISO } from "date-fns";
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { formatAmount } from "@/lib/currency";
+import { toast } from "sonner";
 
 function solidColor(rgba: string): string {
   const m = rgba.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
@@ -24,7 +26,10 @@ export function RecentActivity() {
   const logs = useQuery(api.paymentLogs.getRecentLogs);
 
   function exportCSV() {
-    if (!logs || logs.length === 0) return;
+    if (!logs || logs.length === 0) {
+      toast.error("No payment history to export.");
+      return;
+    }
     const header = "Date,Name,Amount,Currency\n";
     const rows = logs
       .map((l) => `${l.date},"${l.subName}",${l.amount},${l.currency}`)
@@ -81,13 +86,10 @@ export function RecentActivity() {
             {logs.map((log, i) => {
               const bg = solidColor(log.subIconColor);
               const initials = getInitials(log.subName);
-              const date = new Date(log.date + "T00:00:00")
-                .toLocaleDateString("en-US", {
-                  month: "short",
-                  day: "numeric",
-                  year: "numeric",
-                })
-                .toUpperCase();
+              const date = format(
+                parseISO(log.date),
+                "MMM d, yyyy"
+              ).toUpperCase();
 
               return (
                 <motion.li
