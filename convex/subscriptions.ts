@@ -89,6 +89,8 @@ export const createSubscription = mutation({
     status: statusValidator,
     notes: v.optional(v.string()),
     iconColor: v.string(),
+    totalAmount: v.optional(v.number()),
+    splitCount: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     const user = await getAuthUser(ctx);
@@ -115,6 +117,8 @@ export const updateSubscription = mutation({
     status: v.optional(statusValidator),
     notes: v.optional(v.string()),
     iconColor: v.optional(v.string()),
+    totalAmount: v.optional(v.number()),
+    splitCount: v.optional(v.number()),
   },
   handler: async (ctx, { id, ...patch }) => {
     const user = await getAuthUser(ctx);

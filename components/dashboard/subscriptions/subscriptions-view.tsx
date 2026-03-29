@@ -125,6 +125,8 @@ function toCardShape(sub: Doc<"subscriptions">): Subscription {
     remindersEnabled: sub.remindersEnabled,
     reminderIntervals: sub.reminderIntervals,
     vaultNotes: sub.notes,
+    totalAmount: sub.totalAmount,
+    splitCount: sub.splitCount,
   };
 }
 
@@ -176,7 +178,14 @@ export function SubscriptionsView() {
     if (status !== "Any Status") {
       result = result.filter((s) => s.status === status.toLowerCase());
     }
-    if (sortBy === "Name") {
+    if (sortBy === "Next Renewal") {
+      result.sort((a, b) => {
+        if (!a.nextPaymentDate && !b.nextPaymentDate) return 0;
+        if (!a.nextPaymentDate) return 1;
+        if (!b.nextPaymentDate) return -1;
+        return a.nextPaymentDate.localeCompare(b.nextPaymentDate);
+      });
+    } else if (sortBy === "Name") {
       result.sort((a, b) => a.name.localeCompare(b.name));
     } else if (sortBy === "Amount") {
       result.sort((a, b) => b.amount - a.amount);
