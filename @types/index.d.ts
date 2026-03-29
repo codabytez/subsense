@@ -72,6 +72,8 @@ interface Subscription {
   /** e.g. ["1d", "3d", "1w"] */
   reminderIntervals?: string[];
   vaultNotes?: string;
+  totalAmount?: number;
+  splitCount?: number;
 }
 
 // ── Form state ────────────────────────────────────────────────
@@ -90,4 +92,7 @@ interface SubscriptionFormData {
   reminderIntervals: string[];
   status: SubscriptionStatus;
   notes: string;
+  splitBill: boolean;
+  totalAmount: string;
+  splitCount: string;
 }

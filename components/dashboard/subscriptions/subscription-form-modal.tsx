@@ -123,6 +123,9 @@ const DEFAULT_FORM: SubscriptionFormData = {
   reminderIntervals: ["3d"],
   status: "active",
   notes: "",
+  splitBill: false,
+  totalAmount: "",
+  splitCount: "2",
 };
 
 // ── Sub-components ────────────────────────────────────────────
@@ -236,6 +239,9 @@ export function SubscriptionFormModal({
         reminderIntervals: editSub.reminderIntervals,
         status: editSub.status,
         notes: editSub.notes ?? "",
+        splitBill: !!editSub.totalAmount,
+        totalAmount: editSub.totalAmount ? String(editSub.totalAmount) : "",
+        splitCount: editSub.splitCount ? String(editSub.splitCount) : "2",
       });
     }
     // Reset when modal closes
@@ -298,6 +304,14 @@ export function SubscriptionFormModal({
       status: form.status,
       notes: form.notes.trim() || undefined,
       iconColor: icon.rgba,
+      totalAmount:
+        form.splitBill && form.totalAmount
+          ? parseFloat(form.totalAmount)
+          : undefined,
+      splitCount:
+        form.splitBill && form.splitCount
+          ? parseInt(form.splitCount)
+          : undefined,
     };
 
     setIsSaving(true);
@@ -412,42 +426,162 @@ export function SubscriptionFormModal({
               <section className="flex flex-col gap-4">
                 <SectionLabel>Pricing</SectionLabel>
 
-                <div className="flex flex-col gap-1.5">
-                  <FieldLabel>Amount</FieldLabel>
-                  <div className="relative">
-                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm text-muted pointer-events-none">
-                      {form.amountApprox
-                        ? `~${getCurrencySymbol(currencyCode)}`
-                        : getCurrencySymbol(currencyCode)}
-                    </span>
-                    <input
-                      className={inputCls}
-                      style={{
-                        paddingLeft: `${1 + (getCurrencySymbol(currencyCode).length + (form.amountApprox ? 1 : 0)) * 0.6}rem`,
-                      }}
-                      type="text"
-                      inputMode="decimal"
-                      placeholder="0.00"
-                      value={form.amount}
-                      onChange={(e) => set("amount", e.target.value)}
-                    />
-                  </div>
-                </div>
-
                 <div className="flex items-center justify-between px-4 py-3 bg-background rounded-xl border border-border">
                   <div>
                     <p className="text-sm font-semibold text-foreground">
-                      Usage-based / approximate
+                      Split bill
                     </p>
                     <p className="text-[11px] text-muted mt-0.5">
-                      Shows ~ prefix to indicate variable cost
+                      Shared plan — track full cost and your share
                     </p>
                   </div>
                   <Toggle
-                    enabled={form.amountApprox}
-                    onChange={(v) => set("amountApprox", v)}
+                    enabled={form.splitBill}
+                    onChange={(v) => set("splitBill", v)}
                   />
                 </div>
+
+                <AnimatePresence initial={false}>
+                  {form.splitBill ? (
+                    <motion.div
+                      key="split"
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="overflow-hidden"
+                    >
+                      <div className="flex flex-col gap-3">
+                        {/* Full plan cost */}
+                        <div className="flex flex-col gap-1.5">
+                          <FieldLabel>Full plan cost</FieldLabel>
+                          <div className="relative">
+                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm text-muted pointer-events-none">
+                              {getCurrencySymbol(currencyCode)}
+                            </span>
+                            <input
+                              className={inputCls}
+                              style={{ paddingLeft: "2rem" }}
+                              type="text"
+                              inputMode="decimal"
+                              placeholder="0.00"
+                              value={form.totalAmount}
+                              onChange={(e) =>
+                                set("totalAmount", e.target.value)
+                              }
+                            />
+                          </div>
+                        </div>
+
+                        {/* Split count stepper */}
+                        <div className="flex flex-col gap-1.5">
+                          <FieldLabel>Split between</FieldLabel>
+                          <div className="flex items-center gap-3">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                set(
+                                  "splitCount",
+                                  String(
+                                    Math.max(2, parseInt(form.splitCount) - 1)
+                                  )
+                                )
+                              }
+                              className="w-10 h-10 rounded-xl border border-border bg-background text-foreground text-lg font-bold hover:bg-white/5 transition-colors shrink-0"
+                            >
+                              −
+                            </button>
+                            <p className="flex-1 text-center text-sm font-bold text-foreground">
+                              {form.splitCount}{" "}
+                              <span className="text-muted font-normal">
+                                people
+                              </span>
+                            </p>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                set(
+                                  "splitCount",
+                                  String(
+                                    Math.min(20, parseInt(form.splitCount) + 1)
+                                  )
+                                )
+                              }
+                              className="w-10 h-10 rounded-xl border border-border bg-background text-foreground text-lg font-bold hover:bg-white/5 transition-colors shrink-0"
+                            >
+                              +
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Your share */}
+                        <div className="flex flex-col gap-1.5">
+                          <FieldLabel>Your share</FieldLabel>
+                          <div className="relative">
+                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm text-muted pointer-events-none">
+                              {getCurrencySymbol(currencyCode)}
+                            </span>
+                            <input
+                              className={inputCls}
+                              style={{ paddingLeft: "2rem" }}
+                              type="text"
+                              inputMode="decimal"
+                              placeholder="0.00"
+                              value={form.amount}
+                              onChange={(e) => set("amount", e.target.value)}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </motion.div>
+                  ) : (
+                    <motion.div
+                      key="amount"
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="overflow-hidden"
+                    >
+                      <div className="flex flex-col gap-1.5">
+                        <FieldLabel>Amount</FieldLabel>
+                        <div className="relative">
+                          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm text-muted pointer-events-none">
+                            {form.amountApprox
+                              ? `~${getCurrencySymbol(currencyCode)}`
+                              : getCurrencySymbol(currencyCode)}
+                          </span>
+                          <input
+                            className={inputCls}
+                            style={{
+                              paddingLeft: `${1 + (getCurrencySymbol(currencyCode).length + (form.amountApprox ? 1 : 0)) * 0.6}rem`,
+                            }}
+                            type="text"
+                            inputMode="decimal"
+                            placeholder="0.00"
+                            value={form.amount}
+                            onChange={(e) => set("amount", e.target.value)}
+                          />
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                {!form.splitBill && (
+                  <div className="flex items-center justify-between px-4 py-3 bg-background rounded-xl border border-border">
+                    <div>
+                      <p className="text-sm font-semibold text-foreground">
+                        Usage-based / approximate
+                      </p>
+                      <p className="text-[11px] text-muted mt-0.5">
+                        Shows ~ prefix to indicate variable cost
+                      </p>
+                    </div>
+                    <Toggle
+                      enabled={form.amountApprox}
+                      onChange={(v) => set("amountApprox", v)}
+                    />
+                  </div>
+                )}
               </section>
 
               {/* ── BILLING CYCLE ────────────────────────────── */}

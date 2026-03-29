@@ -57,6 +57,8 @@ export default defineSchema({
       v.union(v.literal("rarely"), v.literal("weekly"), v.literal("daily"))
     ),
     usageNotes: v.optional(v.string()),
+    totalAmount: v.optional(v.number()),
+    splitCount: v.optional(v.number()),
   })
     .index("by_user", ["userId"])
     .index("by_user_status", ["userId", "status"]),

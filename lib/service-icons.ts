@@ -86,7 +86,10 @@ import {
 type IconData = { path: string; hex: string };
 
 function normalize(name: string): string {
-  return name.toLowerCase().replace(/[^a-z0-9]/g, "");
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9 ]/g, "")
+    .trim();
 }
 
 const ICON_MAP: Record<string, IconData> = {
@@ -95,32 +98,48 @@ const ICON_MAP: Record<string, IconData> = {
   spotify: siSpotify,
   youtube: siYoutube,
   youtubepremium: siYoutube,
+  "youtube premium": siYoutube,
   ytpremium: siYoutube,
   youtubemusic: siYoutubemusic,
+  "youtube music": siYoutubemusic,
   ytmusic: siYoutubemusic,
   youtubetv: siYoutubetv,
+  "youtube tv": siYoutubetv,
   hbo: siHbo,
   hbomax: siHbomax,
+  "hbo max": siHbomax,
   max: siHbomax,
   // Apple
   apple: siApple,
   icloud: siApple,
   appleicloud: siApple,
+  "apple icloud": siApple,
   appletv: siAppletv,
   appletvplus: siAppletv,
+  "apple tv": siAppletv,
+  "apple tv+": siAppletv,
   applemusic: siApplemusic,
+  "apple music": siApplemusic,
   applearcade: siApplearcade,
+  "apple arcade": siApplearcade,
   applenews: siApplenews,
   applenewsplus: siApplenews,
+  "apple news": siApplenews,
+  "apple news+": siApplenews,
   applepodcasts: siApplepodcasts,
+  "apple podcasts": siApplepodcasts,
   // Google
   google: siGoogle,
   googleone: siGoogle,
+  "google one": siGoogle,
   googledrive: siGoogledrive,
+  "google drive": siGoogledrive,
   googlecloud: siGooglecloud,
+  "google cloud": siGooglecloud,
   gcp: siGooglecloud,
   gemini: siGooglegemini,
   googlegemini: siGooglegemini,
+  "google gemini": siGooglegemini,
   // Dev tools
   github: siGithub,
   githubpro: siGithub,
@@ -156,6 +175,7 @@ const ICON_MAP: Record<string, IconData> = {
   blender: siBlender,
   // AI
   claude: siAnthropic,
+  claudeai: siAnthropic,
   anthropic: siAnthropic,
   // Social / Community
   discord: siDiscord,
@@ -215,7 +235,9 @@ const ICON_MAP: Record<string, IconData> = {
 };
 
 export function getServiceIcon(name: string): IconData | null {
-  return ICON_MAP[normalize(name)] ?? null;
+  const withSpaces = normalize(name);
+  const withoutSpaces = withSpaces.replace(/ /g, "");
+  return ICON_MAP[withSpaces] ?? ICON_MAP[withoutSpaces] ?? null;
 }
 
 /** Returns true if the hex color is light (needs a dark icon/text on top) */

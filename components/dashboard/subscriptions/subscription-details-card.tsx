@@ -14,9 +14,12 @@ import {
   Notification,
   NotificationBing,
   Note,
+  People,
+  Moneys,
 } from "iconsax-reactjs";
 
 import { PaymentMethodLogo } from "@/components/ui/payment-method-logo";
+import { formatAmount } from "@/lib/currency";
 
 function formatInterval(interval: string): string {
   const m = interval.match(/^(\d+)(d|w)$/);
@@ -222,6 +225,59 @@ export function SubscriptionDetailsCard({ sub }: Props) {
             </div>
           )}
         </div>
+
+        {/* Split Bill */}
+        {sub.totalAmount && sub.splitCount && (
+          <div className="border-t border-border p-4 flex flex-col gap-3">
+            <div className="flex items-center gap-1.5 text-muted">
+              <People size={13} color="currentColor" />
+              <span className="text-[10px] font-semibold tracking-widest uppercase">
+                Split Bill
+              </span>
+            </div>
+            <div className="grid grid-cols-3 gap-2">
+              <div className="flex flex-col gap-1 bg-white/3 border border-border rounded-lg px-3 py-2.5">
+                <span className="text-[9px] font-semibold tracking-widest uppercase text-muted">
+                  Full Cost
+                </span>
+                <span className="text-sm font-bold text-foreground font-mono">
+                  {formatAmount(sub.totalAmount, sub.currency)}
+                </span>
+              </div>
+              <div className="flex flex-col gap-1 bg-white/3 border border-border rounded-lg px-3 py-2.5">
+                <span className="text-[9px] font-semibold tracking-widest uppercase text-muted">
+                  Split
+                </span>
+                <span className="text-sm font-bold text-foreground">
+                  {sub.splitCount} people
+                </span>
+              </div>
+              <div
+                className="flex flex-col gap-1 rounded-lg px-3 py-2.5"
+                style={{
+                  backgroundColor: "rgba(124,92,252,0.08)",
+                  border: "1px solid rgba(124,92,252,0.2)",
+                }}
+              >
+                <div className="flex items-center gap-1">
+                  <Moneys size={10} color="var(--color-primary)" />
+                  <span
+                    className="text-[9px] font-semibold tracking-widest uppercase"
+                    style={{ color: "var(--color-primary)" }}
+                  >
+                    Your Share
+                  </span>
+                </div>
+                <span
+                  className="text-sm font-bold font-mono"
+                  style={{ color: "var(--color-primary)" }}
+                >
+                  {formatAmount(sub.amount, sub.currency)}
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Reminders */}
         <div className="border-t border-border p-4 flex flex-col gap-2.5">
