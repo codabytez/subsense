@@ -32,8 +32,8 @@ export const getCurrentUser = query({
 });
 
 export const createUser = mutation({
-  args: { currency: v.string() },
-  handler: async (ctx, { currency }) => {
+  args: { currency: v.string(), avatarUrl: v.optional(v.string()) },
+  handler: async (ctx, { currency, avatarUrl }) => {
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) throw new Error("Not authenticated");
     const email = identity.email;
@@ -44,7 +44,6 @@ export const createUser = mutation({
       .unique();
     if (existing) return existing._id;
     const name = (identity.name as string | undefined) ?? "";
-    const avatarUrl = identity.pictureUrl ?? undefined;
     return await ctx.db.insert("users", { name, email, currency, avatarUrl });
   },
 });

@@ -476,7 +476,10 @@ export function OnboardingContent() {
     if (step === STEPS.length - 1) {
       setIsSaving(true);
       try {
-        await createUser({ currency: data.currency });
+        await createUser({
+          currency: data.currency,
+          avatarUrl: session?.user.image ?? undefined,
+        });
 
         const sub = data.subscription;
         if (sub && sub.name.trim() && sub.amount) {

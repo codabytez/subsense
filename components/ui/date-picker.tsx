@@ -4,6 +4,7 @@ import { useRef, useState, useEffect } from "react";
 import { DayPicker } from "react-day-picker";
 import { AnimatePresence, motion } from "framer-motion";
 import { Calendar, ArrowLeft2, ArrowRight2 } from "iconsax-reactjs";
+import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 
 interface DatePickerProps {
@@ -20,17 +21,13 @@ function toDate(value: string): Date | undefined {
 }
 
 function toIso(date: Date): string {
-  return date.toISOString().slice(0, 10);
+  return format(date, "yyyy-MM-dd");
 }
 
 function formatDisplay(value: string): string {
   const d = toDate(value);
   if (!d) return "";
-  return d.toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
+  return format(d, "MMM d, yyyy");
 }
 
 export function DatePicker({
