@@ -4,11 +4,7 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import type { Id } from "@/convex/_generated/dataModel";
 import { formatAmount } from "@/lib/currency";
-
-function solidColor(rgba: string): string {
-  const m = rgba.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
-  return m ? `rgb(${m[1]},${m[2]},${m[3]})` : "#2a2a35";
-}
+import { ServiceIcon } from "@/components/ui/service-icon";
 
 function getInitials(name: string): string {
   return name
@@ -42,7 +38,6 @@ export function RenewalCard({
   urgent,
   index,
 }: RenewalCardProps) {
-  const bg = solidColor(iconColor);
   const initials = getInitials(name);
 
   return (
@@ -59,12 +54,13 @@ export function RenewalCard({
       >
         {/* Top row: icon left, date + amount right */}
         <div className="flex items-start justify-between gap-3">
-          <div
-            className="w-12 h-12 rounded-2xl flex items-center justify-center text-base font-bold text-white shrink-0"
-            style={{ backgroundColor: bg }}
-          >
-            {initials}
-          </div>
+          <ServiceIcon
+            name={name}
+            iconColor={iconColor}
+            iconInitial={initials}
+            className="w-12 h-12 rounded-2xl"
+            initialClassName="text-base"
+          />
 
           <div className="flex flex-col items-end">
             <span

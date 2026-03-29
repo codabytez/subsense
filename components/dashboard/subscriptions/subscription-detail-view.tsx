@@ -10,6 +10,7 @@ import type { Id } from "@/convex/_generated/dataModel";
 import {
   SubscriptionHero,
   SubscriptionStats,
+  SubscriptionDetailsCard,
   PaymentHistory,
   RoiUsage,
   LinkedAccount,
@@ -17,6 +18,7 @@ import {
 } from "@/components/dashboard/subscriptions";
 import { PaymentConfirmModal } from "@/components/dashboard/calendar/payment-confirm-modal";
 import type { CalendarEvent } from "@/components/dashboard/calendar/calendar-grid";
+import { DEFAULT_CATEGORIES } from "@/lib/default-categories";
 
 type StatusDialog = "pause" | "resume" | "cancel" | null;
 
@@ -88,6 +90,10 @@ export function SubscriptionDetailView() {
     return m ? `rgb(${m[1]},${m[2]},${m[3]})` : "#7c5cfc";
   }
 
+  const categoryColor = DEFAULT_CATEGORIES.find(
+    (c) => c.name === sub.category
+  )?.color;
+
   const event: CalendarEvent = {
     id: sub._id,
     name: sub.name,
@@ -132,10 +138,14 @@ export function SubscriptionDetailView() {
     }
   }
 
+  const isOneOff = sub.cycle === "one-off";
+
   const canConfirmPayment =
+    !isOneOff &&
     sub.paymentMode === "manual" &&
     sub.status !== "cancelled" &&
-    sub.status !== "paused";
+    sub.status !== "paused" &&
+    sub.status !== "lapsed";
 
   const dialogConfig = statusDialog ? STATUS_DIALOG_CONFIG[statusDialog] : null;
 
@@ -148,24 +158,34 @@ export function SubscriptionDetailView() {
           plan={sub.plan}
           iconInitial={iconInitial}
           iconColor={sub.iconColor}
+          category={sub.category}
+          categoryColor={categoryColor}
           onConfirmPayment={
             canConfirmPayment ? () => setShowPaymentConfirm(true) : undefined
           }
           onEdit={() => setShowForm(true)}
+          isOneOff={isOneOff}
           onTogglePause={
-            sub.status !== "cancelled"
+            !isOneOff && sub.status !== "cancelled" && sub.status !== "lapsed"
               ? () =>
                   setStatusDialog(sub.status === "paused" ? "resume" : "pause")
               : undefined
           }
           onCancel={
-            sub.status !== "cancelled"
+            sub.status !== "cancelled" &&
+            sub.status !== "expired" &&
+            sub.status !== "lapsed"
               ? () => setStatusDialog("cancel")
               : undefined
           }
           onDelete={
             sub.status === "cancelled"
               ? () => setShowDeleteConfirm(true)
+              : undefined
+          }
+          onRenew={
+            isOneOff && sub.status === "expired"
+              ? () => setShowForm(true)
               : undefined
           }
           isUpdatingStatus={isUpdatingStatus}
@@ -177,6 +197,7 @@ export function SubscriptionDetailView() {
           <PaymentHistory subscriptionId={id} currency={sub.currency} />
 
           <div className="flex flex-col gap-6">
+            <SubscriptionDetailsCard sub={sub} />
             <RoiUsage subscriptionId={id} />
             <LinkedAccount
               subscriptionId={id}

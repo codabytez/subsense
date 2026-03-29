@@ -30,7 +30,13 @@ function buildEventsMap(
 ): Record<string, CalendarEvent[]> {
   const map: Record<string, CalendarEvent[]> = {};
   for (const sub of subs) {
-    if (sub.status === "cancelled" || sub.status === "paused") continue;
+    if (
+      sub.status === "cancelled" ||
+      sub.status === "paused" ||
+      sub.status === "expired" ||
+      sub.status === "lapsed"
+    )
+      continue;
     if (!sub.nextPaymentDate) continue;
     const key = sub.nextPaymentDate; // already "YYYY-MM-DD"
     if (!map[key]) map[key] = [];
@@ -43,6 +49,7 @@ function buildEventsMap(
       cycle: sub.cycle,
       paymentMode: sub.paymentMode,
       iconColor: sub.iconColor,
+      isOneOff: sub.cycle === "one-off",
       paymentMethodId: sub.paymentMethodId,
       notes: sub.notes,
     });

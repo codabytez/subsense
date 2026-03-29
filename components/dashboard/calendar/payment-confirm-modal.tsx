@@ -10,21 +10,16 @@ import type { Id } from "@/convex/_generated/dataModel";
 import type { CalendarEvent } from "./calendar-grid";
 import { Button } from "@/components/ui";
 import { formatAmount } from "@/lib/currency";
+import { ServiceIcon } from "@/components/ui/service-icon";
+import { PaymentMethodLogo } from "@/components/ui/payment-method-logo";
 
-function iconFromSub(sub: CalendarEvent): {
-  bg: string;
-  color: string;
-  initials: string;
-} {
-  const m = sub.iconColor.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
-  const bg = m ? `rgb(${m[1]},${m[2]},${m[3]})` : "#2a2a35";
-  const initials = sub.name
+function getInitials(name: string): string {
+  return name
     .split(" ")
     .filter(Boolean)
     .slice(0, 2)
     .map((w) => w[0].toUpperCase())
     .join("");
-  return { bg, color: "#fff", initials };
 }
 
 function generateRefId() {
@@ -80,7 +75,7 @@ export function PaymentConfirmModal({
   const confirmPayment = useMutation(api.paymentLogs.confirmPayment);
   const paymentMethods = useQuery(api.paymentMethods.getPaymentMethods);
 
-  const icon = sub ? iconFromSub(sub) : null;
+  const initials = sub ? getInitials(sub.name) : "";
   const today = new Date();
 
   const linkedMethod = sub?.paymentMethodId
@@ -154,15 +149,13 @@ export function PaymentConfirmModal({
                       {/* Left */}
                       <div className="p-8 border-b md:border-b-0 md:border-r border-border flex flex-col gap-6">
                         <div className="flex items-start justify-between">
-                          <div
-                            className="w-16 h-16 rounded-2xl flex items-center justify-center text-base font-black shrink-0"
-                            style={{
-                              backgroundColor: icon!.bg,
-                              color: icon!.color,
-                            }}
-                          >
-                            {icon!.initials}
-                          </div>
+                          <ServiceIcon
+                            name={sub.name}
+                            iconColor={sub.iconColor}
+                            iconInitial={initials}
+                            className="w-16 h-16 rounded-2xl shrink-0"
+                            initialClassName="text-base"
+                          />
                           <span
                             className="text-[10px] font-bold tracking-widest uppercase px-3 py-1.5 rounded"
                             style={{
@@ -235,36 +228,12 @@ export function PaymentConfirmModal({
                               Payment Method
                             </p>
                             <div className="flex items-center gap-3 p-3 rounded-xl border border-border bg-background">
-                              <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center shrink-0">
-                                <svg
-                                  width="16"
-                                  height="12"
-                                  viewBox="0 0 16 12"
-                                  fill="none"
-                                >
-                                  <rect
-                                    width="16"
-                                    height="12"
-                                    rx="2"
-                                    fill="#1a1a2e"
-                                  />
-                                  <rect
-                                    x="1"
-                                    y="4"
-                                    width="14"
-                                    height="2"
-                                    fill="#444"
-                                  />
-                                  <rect
-                                    x="1"
-                                    y="8"
-                                    width="4"
-                                    height="1.5"
-                                    rx="0.5"
-                                    fill="#666"
-                                  />
-                                </svg>
-                              </div>
+                              <PaymentMethodLogo
+                                type={linkedMethod!.type}
+                                brand={linkedMethod!.brand}
+                                width={36}
+                                height={22}
+                              />
                               <p className="text-sm font-bold text-foreground">
                                 {methodLabel}
                               </p>

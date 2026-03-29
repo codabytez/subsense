@@ -1,11 +1,25 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Edit2, Pause, Play, CloseCircle, TickCircle } from "iconsax-reactjs";
+import {
+  Edit2,
+  Pause,
+  Play,
+  CloseCircle,
+  TickCircle,
+  Refresh,
+} from "iconsax-reactjs";
+import { ServiceIcon } from "@/components/ui/service-icon";
+import { getServiceIcon } from "@/lib/service-icons";
 
-/** Extract "r,g,b" from "rgba(r,g,b,a)" or return a fallback */
-function rgbFromRgba(rgba: string): string {
-  const m = rgba.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+/** Extract "r,g,b" from a hex (#rrggbb) or rgba(r,g,b,a) string */
+function rgbFromRgba(color: string): string {
+  const hex = color.match(/^#([0-9a-f]{6})$/i);
+  if (hex) {
+    const n = parseInt(hex[1], 16);
+    return `${(n >> 16) & 255},${(n >> 8) & 255},${n & 255}`;
+  }
+  const m = color.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
   return m ? `${m[1]},${m[2]},${m[3]}` : "124,92,252";
 }
 
@@ -13,13 +27,17 @@ interface SubscriptionHeroProps {
   name: string;
   status: SubscriptionStatus;
   plan?: string;
+  category?: string;
+  categoryColor?: string;
   iconInitial: string;
   iconColor: string;
+  isOneOff?: boolean;
   onConfirmPayment?: () => void;
   onEdit?: () => void;
   onTogglePause?: () => void;
   onCancel?: () => void;
   onDelete?: () => void;
+  onRenew?: () => void;
   isUpdatingStatus?: boolean;
 }
 
@@ -27,6 +45,8 @@ export function SubscriptionHero({
   name,
   status,
   plan,
+  category,
+  categoryColor,
   iconInitial,
   iconColor,
   onConfirmPayment,
@@ -34,6 +54,8 @@ export function SubscriptionHero({
   onTogglePause,
   onCancel,
   onDelete,
+  onRenew,
+  isOneOff,
   isUpdatingStatus,
 }: SubscriptionHeroProps) {
   const statusConfig: Record<
@@ -44,10 +66,14 @@ export function SubscriptionHero({
     trial: { label: "Trial", color: "var(--color-tertiary)" },
     paused: { label: "Paused", color: "var(--color-muted)" },
     cancelled: { label: "Cancelled", color: "var(--color-tertiary)" },
+    expired: { label: "Expired", color: "var(--color-muted)" },
+    lapsed: { label: "Lapsed", color: "var(--color-tertiary)" },
   };
 
   const { label: statusLabel, color: statusColor } = statusConfig[status];
-  const rgb = rgbFromRgba(iconColor);
+  const brand = getServiceIcon(name);
+  const resolvedColor = brand ? `#${brand.hex}` : iconColor;
+  const rgb = rgbFromRgba(resolvedColor);
 
   return (
     <motion.div
@@ -67,12 +93,13 @@ export function SubscriptionHero({
 
       <div className="relative z-10 flex flex-col items-center gap-4 py-10 px-6">
         {/* Icon */}
-        <div
-          className="w-20 h-20 rounded-2xl flex items-center justify-center text-3xl font-black text-white shadow-xl"
-          style={{ backgroundColor: iconColor }}
-        >
-          {iconInitial}
-        </div>
+        <ServiceIcon
+          name={name}
+          iconColor={iconColor}
+          iconInitial={iconInitial}
+          className="w-20 h-20 rounded-2xl shadow-xl"
+          initialClassName="text-3xl"
+        />
 
         {/* Name */}
         <h1 className="text-4xl font-black text-foreground text-center">
@@ -94,6 +121,25 @@ export function SubscriptionHero({
             />
             {statusLabel}
           </span>
+          {category && (
+            <span
+              className="flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold tracking-widest uppercase"
+              style={{
+                backgroundColor: categoryColor
+                  ? `${categoryColor}20`
+                  : "rgba(160,160,175,0.1)",
+                color: categoryColor ?? "var(--color-muted)",
+              }}
+            >
+              <span
+                className="w-1.5 h-1.5 rounded-full shrink-0"
+                style={{
+                  backgroundColor: categoryColor ?? "var(--color-muted)",
+                }}
+              />
+              {category}
+            </span>
+          )}
           {plan && (
             <span className="px-3 py-1 rounded-full border border-border text-muted text-[10px] font-bold tracking-widest uppercase">
               {plan}
@@ -157,6 +203,17 @@ export function SubscriptionHero({
             >
               <CloseCircle size={15} color="currentColor" />
               Delete
+            </button>
+          )}
+          {isOneOff && status === "expired" && onRenew && (
+            <button
+              onClick={onRenew}
+              disabled={isUpdatingStatus}
+              className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white hover:opacity-90 transition-opacity disabled:opacity-40"
+              style={{ backgroundColor: "var(--color-primary)" }}
+            >
+              <Refresh size={15} color="currentColor" />
+              Renew
             </button>
           )}
         </div>

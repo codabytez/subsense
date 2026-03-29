@@ -38,12 +38,16 @@ function StatBlock({ label, value, sub, icon: Icon, index }: StatBlockProps) {
 }
 
 function monthlyEquivalent(sub: Doc<"subscriptions">): number {
+  if (sub.cycle === "one-off") return 0;
   if (sub.cycle === "annual") return sub.amount / 12;
   if (sub.cycle === "weekly") return sub.amount * 4.33;
   return sub.amount;
 }
 
-function daysUntilLabel(nextPaymentDate: string): {
+function daysUntilLabel(
+  nextPaymentDate: string,
+  isOneOff: boolean
+): {
   value: string;
   sub: string;
 } {
@@ -58,6 +62,13 @@ function daysUntilLabel(nextPaymentDate: string): {
     day: "numeric",
     year: due.getFullYear() !== today.getFullYear() ? "numeric" : undefined,
   });
+
+  if (isOneOff) {
+    if (diff < 0) return { value: "Expired", sub: dateStr };
+    if (diff === 0) return { value: "Today", sub: `Expires ${dateStr}` };
+    if (diff === 1) return { value: "1 Day", sub: `Expires ${dateStr}` };
+    return { value: `${diff} Days`, sub: `Expires ${dateStr}` };
+  }
 
   if (diff < 0) return { value: "Overdue", sub: dateStr };
   if (diff === 0) return { value: "Today", sub: dateStr };
@@ -78,7 +89,8 @@ export function SubscriptionStats({ sub, userCurrency }: Props) {
   const totalSpent = (logs ?? []).reduce((sum, l) => sum + l.amount, 0);
   const logCount = logs?.length ?? 0;
 
-  const billing = daysUntilLabel(sub.nextPaymentDate);
+  const isOneOff = sub.cycle === "one-off";
+  const billing = daysUntilLabel(sub.nextPaymentDate, isOneOff);
   const monthly = monthlyEquivalent(sub);
 
   return (
@@ -95,16 +107,16 @@ export function SubscriptionStats({ sub, userCurrency }: Props) {
         index={0}
       />
       <StatBlock
-        label="Next Billing"
+        label={isOneOff ? "Expires In" : "Next Billing"}
         value={billing.value}
-        sub={`Renews on ${billing.sub}`}
+        sub={isOneOff ? billing.sub : `Renews on ${billing.sub}`}
         icon={Calendar}
         index={1}
       />
       <StatBlock
-        label="Monthly Cost"
-        value={formatAmount(monthly, sub.currency ?? userCurrency)}
-        sub={sub.plan ?? sub.cycle}
+        label={isOneOff ? "One-off Cost" : "Monthly Cost"}
+        value={`${sub.amountApprox ? "~" : ""}${formatAmount(isOneOff ? sub.amount : monthly, sub.currency ?? userCurrency)}`}
+        sub={sub.plan ?? (isOneOff ? "One-time payment" : sub.cycle)}
         icon={ChartSquare}
         index={2}
       />

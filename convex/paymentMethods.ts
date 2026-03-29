@@ -77,6 +77,7 @@ export const createPaymentMethod = mutation({
 export const updatePaymentMethod = mutation({
   args: {
     id: v.id("paymentMethods"),
+    type: v.optional(paymentMethodType),
     label: v.optional(v.string()),
     brand: v.optional(v.string()),
     last4: v.optional(v.string()),

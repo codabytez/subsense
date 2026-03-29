@@ -198,7 +198,13 @@ export const processAutoPayments = internalMutation({
 
     for (const sub of allSubs) {
       if (sub.paymentMode !== "auto") continue;
-      if (sub.status === "cancelled" || sub.status === "paused") continue;
+      if (sub.cycle === "one-off") continue;
+      if (
+        sub.status === "cancelled" ||
+        sub.status === "paused" ||
+        sub.status === "lapsed"
+      )
+        continue;
       if (sub.nextPaymentDate !== today) continue;
 
       await ctx.db.insert("paymentLogs", {

@@ -31,7 +31,8 @@ export default defineSchema({
       v.literal("annual"),
       v.literal("trial"),
       v.literal("usage-based"),
-      v.literal("custom")
+      v.literal("custom"),
+      v.literal("one-off")
     ),
     customInterval: v.optional(v.string()),
     nextPaymentDate: v.string(),
@@ -44,7 +45,9 @@ export default defineSchema({
       v.literal("active"),
       v.literal("trial"),
       v.literal("paused"),
-      v.literal("cancelled")
+      v.literal("cancelled"),
+      v.literal("expired"),
+      v.literal("lapsed")
     ),
     notes: v.optional(v.string()),
     iconColor: v.string(),

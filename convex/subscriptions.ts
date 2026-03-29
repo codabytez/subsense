@@ -14,14 +14,17 @@ const cycleValidator = v.union(
   v.literal("annual"),
   v.literal("trial"),
   v.literal("usage-based"),
-  v.literal("custom")
+  v.literal("custom"),
+  v.literal("one-off")
 );
 
 const statusValidator = v.union(
   v.literal("active"),
   v.literal("trial"),
   v.literal("paused"),
-  v.literal("cancelled")
+  v.literal("cancelled"),
+  v.literal("expired"),
+  v.literal("lapsed")
 );
 
 async function getAuthUser(ctx: MutationCtx | QueryCtx) {
@@ -155,6 +158,54 @@ export const deleteSubscription = mutation({
       subscriptionId: id,
     });
     await ctx.db.delete(id);
+  },
+});
+
+export const autoExpireOneOffs = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const today = new Date().toISOString().split("T")[0];
+    const allSubs = await ctx.db.query("subscriptions").collect();
+    for (const sub of allSubs) {
+      if (sub.cycle !== "one-off") continue;
+      if (sub.status === "cancelled" || sub.status === "expired") continue;
+      if (sub.nextPaymentDate < today) {
+        await ctx.db.patch(sub._id, { status: "expired" });
+      }
+    }
+  },
+});
+
+export const autoLapseOverdue = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const today = new Date();
+    today.setUTCHours(0, 0, 0, 0);
+    const allSubs = await ctx.db.query("subscriptions").collect();
+    for (const sub of allSubs) {
+      if (sub.cycle === "one-off") continue;
+      if (sub.status !== "active" && sub.status !== "trial") continue;
+      if (!sub.nextPaymentDate) continue;
+      const due = new Date(sub.nextPaymentDate);
+      due.setUTCHours(0, 0, 0, 0);
+      const daysOverdue = Math.round(
+        (today.getTime() - due.getTime()) / 86_400_000
+      );
+      if (daysOverdue >= 15) {
+        await ctx.db.patch(sub._id, { status: "lapsed" });
+        const user = await ctx.db.get(sub.userId);
+        if (user && !user.notifMuteAll) {
+          await ctx.runMutation(internal.inbox.createNotification, {
+            userId: sub.userId,
+            type: "overdue",
+            title: `${sub.name} has been lapsed`,
+            message: `Payment was due ${daysOverdue} days ago. Update the subscription to reactivate it.`,
+            subscriptionId: sub._id,
+            link: `/dashboard/subscriptions/${sub._id}`,
+          });
+        }
+      }
+    }
   },
 });
 

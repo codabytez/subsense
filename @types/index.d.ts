@@ -1,5 +1,11 @@
 /** Current billing status of a subscription */
-type SubscriptionStatus = "active" | "trial" | "paused" | "cancelled";
+type SubscriptionStatus =
+  | "active"
+  | "trial"
+  | "paused"
+  | "cancelled"
+  | "expired"
+  | "lapsed";
 
 /** A single subscription record as stored in the database */
 type CalendarView = "Week" | "Month" | "Year";
@@ -11,10 +17,16 @@ type BillingCycle =
   | "annual"
   | "trial"
   | "usage-based"
-  | "custom";
+  | "custom"
+  | "one-off";
 
 /** Contextual label shown above the renewal value on a card */
-type RenewalLabel = "RENEWS_IN" | "RESUME_ON" | "NEXT_BILLING" | "TRIAL_ENDS";
+type RenewalLabel =
+  | "RENEWS_IN"
+  | "RESUME_ON"
+  | "NEXT_BILLING"
+  | "TRIAL_ENDS"
+  | "EXPIRES_IN";
 
 /** A single subscription record */
 interface Subscription {
