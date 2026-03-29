@@ -27,6 +27,7 @@ import {
   Moon,
 } from "lucide-react";
 import { useTheme } from "@/providers/theme-provider";
+import { authClient } from "@/lib/auth-client";
 
 /* ─── easing ────────────────────────────────────────── */
 const expo = [0.22, 1, 0.36, 1] as const;
@@ -593,6 +594,8 @@ function MagneticButton({
 export function LandingPage() {
   const { theme, setTheme } = useTheme();
   const isDark = theme === "Dark" || theme === "Auto";
+  const { data: session, isPending: sessionLoading } = authClient.useSession();
+  const isLoggedIn = !!session?.user;
   const heroRef = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({
     target: heroRef,
@@ -630,7 +633,7 @@ export function LandingPage() {
                 style={{ width: 19, height: "auto" }}
               />
             </motion.div>
-            <span className="text-xs font-black tracking-widest uppercase text-primary font-display group-hover:text-primary/80 transition-colors">
+            <span className="hidden sm:block text-xs font-black tracking-widest uppercase text-primary font-display group-hover:text-primary/80 transition-colors">
               Subsense
             </span>
           </Link>
@@ -654,20 +657,41 @@ export function LandingPage() {
                 </motion.span>
               </AnimatePresence>
             </motion.button>
-            <Link
-              href="/login"
-              className="px-3.5 py-1.5 text-xs font-semibold text-muted hover:text-foreground transition-colors rounded-lg hover:bg-white/5"
-            >
-              Sign in
-            </Link>
-            <motion.div whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }}>
-              <Link
-                href="/signup"
-                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-primary text-white text-xs font-bold hover:bg-primary/90 transition-colors shadow-lg shadow-primary/25"
+            {sessionLoading ? (
+              <div className="h-7 w-32 rounded-xl bg-white/10 animate-pulse" />
+            ) : isLoggedIn ? (
+              <motion.div
+                whileHover={{ scale: 1.04 }}
+                whileTap={{ scale: 0.97 }}
               >
-                Get started <ArrowRight size={11} />
-              </Link>
-            </motion.div>
+                <Link
+                  href="/dashboard"
+                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-primary text-white text-xs font-bold hover:bg-primary/90 transition-colors shadow-lg shadow-primary/25 whitespace-nowrap"
+                >
+                  Go to Dashboard <ArrowRight size={11} />
+                </Link>
+              </motion.div>
+            ) : (
+              <>
+                <Link
+                  href="/login"
+                  className="hidden sm:block px-3 py-1.5 text-xs font-semibold text-muted hover:text-foreground transition-colors rounded-lg hover:bg-white/5 whitespace-nowrap"
+                >
+                  Sign in
+                </Link>
+                <motion.div
+                  whileHover={{ scale: 1.04 }}
+                  whileTap={{ scale: 0.97 }}
+                >
+                  <Link
+                    href="/signup"
+                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-primary text-white text-xs font-bold hover:bg-primary/90 transition-colors shadow-lg shadow-primary/25 whitespace-nowrap"
+                  >
+                    Get started <ArrowRight size={11} />
+                  </Link>
+                </motion.div>
+              </>
+            )}
           </div>
         </motion.nav>
       </div>
@@ -1149,7 +1173,7 @@ export function LandingPage() {
             viewport={{ once: true }}
             className="flex flex-col items-center gap-5"
           >
-            <motion.h2 className="text-4xl md:text-6xl font-black font-display leading-[1.05]">
+            <motion.h2 className="text-3xl sm:text-4xl md:text-6xl font-black font-display leading-[1.05]">
               Your subscriptions are{" "}
               <span
                 className="text-transparent bg-clip-text"
