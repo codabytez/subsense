@@ -105,7 +105,7 @@ const sections = [
     content: [
       {
         heading: "Access & Export",
-        body: "You have the right to know what data we hold about you. Contact us at privacy@subsense.app and we will provide a full export of your account data within 7 days.",
+        body: "You have the right to know what data we hold about you. Contact us at hello@unbuilt.studio and we will provide a full export of your account data within 7 days.",
       },
       {
         heading: "Account Deletion",
