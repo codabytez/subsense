@@ -179,7 +179,13 @@ export function SubscriptionsView() {
       result = result.filter((s) => s.status === status.toLowerCase());
     }
     if (sortBy === "Next Renewal") {
+      const activeStatuses = new Set(["active", "trial", "paused"]);
       result.sort((a, b) => {
+        const aActive = activeStatuses.has(a.status);
+        const bActive = activeStatuses.has(b.status);
+        if (!aActive && !bActive) return 0;
+        if (!aActive) return 1;
+        if (!bActive) return -1;
         if (!a.nextPaymentDate && !b.nextPaymentDate) return 0;
         if (!a.nextPaymentDate) return 1;
         if (!b.nextPaymentDate) return -1;
