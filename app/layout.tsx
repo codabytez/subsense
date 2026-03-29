@@ -37,6 +37,18 @@ export const metadata: Metadata = {
     title: "Subsense",
     description: "Subscription management, simplified.",
   },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "Subsense",
+  },
+  icons: {
+    apple: "/favicon/apple-touch-icon.png",
+  },
+  other: {
+    "theme-color": "#0e0e13",
+    "apple-mobile-web-app-capable": "yes",
+  },
 };
 
 export default async function RootLayout({
