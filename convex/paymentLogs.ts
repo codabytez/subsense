@@ -205,14 +205,22 @@ export const processAutoPayments = internalMutation({
         sub.status === "lapsed"
       )
         continue;
-      if (sub.nextPaymentDate !== today) continue;
+      if (sub.nextPaymentDate > today) continue;
+
+      // Deduplicate: skip if a log already exists for this exact due date
+      const existingLog = await ctx.db
+        .query("paymentLogs")
+        .withIndex("by_subscription", (q) => q.eq("subscriptionId", sub._id))
+        .filter((q) => q.eq(q.field("date"), sub.nextPaymentDate))
+        .first();
+      if (existingLog) continue;
 
       await ctx.db.insert("paymentLogs", {
         subscriptionId: sub._id,
         userId: sub.userId,
         amount: sub.amount,
         currency: sub.currency,
-        date: today,
+        date: sub.nextPaymentDate,
         paymentMethodId: sub.paymentMethodId,
       });
 
