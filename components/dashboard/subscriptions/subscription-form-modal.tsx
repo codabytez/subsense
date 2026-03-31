@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { CloseCircle, Setting2 } from "iconsax-reactjs";
 import { useQuery, useMutation } from "convex/react";
@@ -334,7 +335,7 @@ export function SubscriptionFormModal({
 
   const icon = iconFromName(form.name);
 
-  return (
+  return createPortal(
     <AnimatePresence>
       {open && (
         <>
@@ -951,6 +952,7 @@ export function SubscriptionFormModal({
           </motion.div>
         </>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   );
 }

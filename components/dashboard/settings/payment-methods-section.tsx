@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { createPortal } from "react-dom";
 import { useQuery, useMutation } from "convex/react";
 import {
   Edit2,
@@ -160,14 +161,40 @@ function MethodChip({
   onSetDefault: () => void;
 }) {
   return (
-    <div className="bg-neutral rounded-2xl p-5 flex flex-col gap-4 group relative">
+    <div className="bg-neutral rounded-2xl p-5 flex flex-col gap-4 group">
       <div className="flex items-start justify-between">
         <MethodIcon type={method.type} brand={method.brand} size="md" />
-        {method.isDefault && (
-          <span className="text-[10px] font-bold tracking-widest uppercase px-2.5 py-1 rounded bg-primary/15 text-primary">
-            Default
-          </span>
-        )}
+        <div className="flex items-center gap-1">
+          {method.isDefault && (
+            <span className="text-[10px] font-bold tracking-widest uppercase px-2.5 py-1 rounded bg-primary/15 text-primary">
+              Default
+            </span>
+          )}
+          {/* Actions — always visible on mobile, hover-only on desktop */}
+          <div className="flex items-center gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+            {!method.isDefault && (
+              <button
+                onClick={onSetDefault}
+                title="Set as default"
+                className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-border/50 transition-colors"
+              >
+                <Star1 size={13} color="var(--color-muted)" />
+              </button>
+            )}
+            <button
+              onClick={onEdit}
+              className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-border/50 transition-colors"
+            >
+              <Edit2 size={13} color="var(--color-muted)" />
+            </button>
+            <button
+              onClick={onDelete}
+              className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-tertiary/10 transition-colors"
+            >
+              <Trash size={13} color="var(--color-tertiary)" />
+            </button>
+          </div>
+        </div>
       </div>
 
       <div>
@@ -183,31 +210,6 @@ function MethodChip({
             {typeLabel(method.type)}
           </p>
         )}
-      </div>
-
-      {/* Actions — always visible on mobile, hover-only on desktop */}
-      <div className="absolute top-3 right-3 flex items-center gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
-        {!method.isDefault && (
-          <button
-            onClick={onSetDefault}
-            title="Set as default"
-            className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-border/50 transition-colors"
-          >
-            <Star1 size={13} color="var(--color-muted)" />
-          </button>
-        )}
-        <button
-          onClick={onEdit}
-          className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-border/50 transition-colors"
-        >
-          <Edit2 size={13} color="var(--color-muted)" />
-        </button>
-        <button
-          onClick={onDelete}
-          className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-tertiary/10 transition-colors"
-        >
-          <Trash size={13} color="var(--color-tertiary)" />
-        </button>
       </div>
     </div>
   );
@@ -335,7 +337,7 @@ function PaymentMethodModal({
   const isValid = isCard ? form.brand.length > 0 : form.label.trim().length > 0;
   const isEdit = !!(initial.label || initial.brand);
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
       <div
         className="absolute inset-0 bg-background/80 backdrop-blur-sm"
@@ -496,7 +498,8 @@ function PaymentMethodModal({
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 
@@ -518,7 +521,7 @@ function ViewAllModal({
   onClose: () => void;
   deletingId: Id<"paymentMethods"> | null;
 }) {
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div
         className="absolute inset-0 bg-background/80 backdrop-blur-sm"
@@ -597,7 +600,8 @@ function ViewAllModal({
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 
@@ -739,7 +743,7 @@ export function PaymentMethodsSection() {
             Add your first payment method
           </button>
         ) : (
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             {preview.map((m) => (
               <MethodChip
                 key={m._id}
