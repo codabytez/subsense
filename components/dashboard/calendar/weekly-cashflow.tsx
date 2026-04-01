@@ -1,7 +1,14 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
+import {
+  addDays,
+  format,
+  isSameMonth,
+  isSameYear,
+  startOfWeek,
+} from "date-fns";
 import type { Doc } from "@/convex/_generated/dataModel";
 import { toDateKey } from "./calendar-grid";
 
@@ -9,17 +16,24 @@ const CHART_H = 300;
 const LABEL_H = 28;
 const DAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
-function getCurrentWeekDays(): Date[] {
-  const today = new Date();
-  const day = (today.getDay() + 6) % 7; // Mon = 0
-  const mon = new Date(today);
-  mon.setDate(today.getDate() - day);
-  mon.setHours(0, 0, 0, 0);
-  return Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(mon);
-    d.setDate(mon.getDate() + i);
-    return d;
-  });
+function getWeekDays(weekOffset: number): Date[] {
+  const weekStart = startOfWeek(new Date(), { weekStartsOn: 1 });
+  return Array.from({ length: 7 }, (_, i) =>
+    addDays(weekStart, weekOffset * 7 + i)
+  );
+}
+
+function formatWeekRange(days: Date[]) {
+  const start = days[0];
+  const end = days[6];
+  const sameMonth = isSameMonth(start, end);
+  const sameYear = isSameYear(start, end);
+  const startLabel = format(start, "MMM d");
+  const endLabel = format(
+    end,
+    `${sameMonth ? "" : "MMM "}d${sameYear ? "" : ", yyyy"}`
+  );
+  return `${startLabel} - ${endLabel}`;
 }
 
 function toH(amount: number, max: number) {
@@ -32,7 +46,9 @@ interface WeeklyCashFlowProps {
 }
 
 export function WeeklyCashFlow({ subs }: WeeklyCashFlowProps) {
-  const weekDays = useMemo(() => getCurrentWeekDays(), []);
+  const [weekOffset, setWeekOffset] = useState(0);
+  const weekDays = useMemo(() => getWeekDays(weekOffset), [weekOffset]);
+  const weekRangeLabel = useMemo(() => formatWeekRange(weekDays), [weekDays]);
 
   const days = useMemo(() => {
     if (!subs) return null;
@@ -75,10 +91,31 @@ export function WeeklyCashFlow({ subs }: WeeklyCashFlowProps) {
             Weekly Cash Flow
           </h2>
           <p className="text-sm text-muted mt-0.5">
-            Daily distribution of subscription costs this week
+            Daily distribution of subscription costs by week
           </p>
         </div>
-        <div className="flex items-center gap-5">
+        <div className="flex items-center gap-3 sm:gap-5">
+          <div className="flex items-center gap-1 rounded-xl border border-border bg-background px-1 py-1">
+            <button
+              type="button"
+              onClick={() => setWeekOffset((prev) => prev - 1)}
+              className="h-8 w-8 rounded-lg text-foreground hover:bg-surface transition-colors"
+              aria-label="Previous week"
+            >
+              &lt;
+            </button>
+            <p className="min-w-28 px-1 text-center text-[11px] font-semibold text-muted">
+              {weekRangeLabel}
+            </p>
+            <button
+              type="button"
+              onClick={() => setWeekOffset((prev) => prev + 1)}
+              className="h-8 w-8 rounded-lg text-foreground hover:bg-surface transition-colors"
+              aria-label="Next week"
+            >
+              &gt;
+            </button>
+          </div>
           <div className="flex items-center gap-1.5">
             <span
               style={{
