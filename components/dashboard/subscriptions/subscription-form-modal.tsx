@@ -1,14 +1,15 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { CloseCircle, Setting2 } from "iconsax-reactjs";
 import { useQuery, useMutation } from "convex/react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Select, SelectOption } from "@/components/ui/select";
+import { ClientPortal } from "@/components/ui/client-portal";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { DEFAULT_CATEGORIES } from "@/lib/default-categories";
@@ -172,9 +173,6 @@ function Toggle({
   );
 }
 
-const inputCls =
-  "w-full bg-background border border-border rounded px-4 py-3 text-sm text-foreground placeholder:text-muted/40 focus:outline-none focus:border-primary/50 transition-colors";
-
 // ── Props ─────────────────────────────────────────────────────
 export interface SubscriptionFormModalProps {
   open: boolean;
@@ -277,6 +275,27 @@ export function SubscriptionFormModal({
     }));
   }
 
+  function handleAddReminderInterval() {
+    const n = parseInt(customReminderNum);
+    if (!n || n < 1) return;
+    const val = `${n}${customReminderUnit}`;
+    if (!form.reminderIntervals.includes(val)) {
+      toggleReminderInterval(val);
+    }
+  }
+
+  function sanitizeDecimalInput(value: string) {
+    const sanitized = value.replace(/[^\d.]/g, "");
+    const [whole = "", ...fractionParts] = sanitized.split(".");
+
+    if (fractionParts.length === 0) {
+      return whole;
+    }
+
+    const fraction = fractionParts.join("");
+    return `${whole || "0"}.${fraction}`;
+  }
+
   async function handleSave() {
     if (!form.name.trim() || !form.amount || !form.nextPaymentDate) {
       toast.error("Name, amount, and next payment date are required.");
@@ -335,624 +354,630 @@ export function SubscriptionFormModal({
 
   const icon = iconFromName(form.name);
 
-  return createPortal(
-    <AnimatePresence>
-      {open && (
-        <>
-          {/* Backdrop */}
-          <motion.div
-            key="backdrop"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={onClose}
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40"
-          />
+  return (
+    <ClientPortal>
+      <AnimatePresence>
+        {open && (
+          <>
+            {/* Backdrop */}
+            <motion.div
+              key="backdrop"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={onClose}
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40"
+            />
 
-          {/* Slide-in panel */}
-          <motion.div
-            key="panel"
-            initial={{ x: "100%" }}
-            animate={{ x: 0 }}
-            exit={{ x: "100%" }}
-            transition={{ type: "spring", stiffness: 300, damping: 30 }}
-            className="fixed top-0 right-0 bottom-0 w-full max-w-120 bg-surface border-l border-border z-50 flex flex-col"
-          >
-            {/* Header */}
-            <div className="flex items-start justify-between px-6 py-5 border-b border-border shrink-0">
-              <div>
-                <h2 className="text-lg font-bold text-foreground">
-                  {isEdit ? "Edit Subscription" : "Add Subscription"}
-                </h2>
-                <p className="text-xs text-muted mt-0.5">
-                  {isEdit
-                    ? "Update your subscription details."
-                    : "Track a new service in your vault."}
-                </p>
+            {/* Slide-in panel */}
+            <motion.div
+              key="panel"
+              initial={{ x: "100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "100%" }}
+              transition={{ type: "spring", stiffness: 300, damping: 30 }}
+              className="fixed top-0 right-0 bottom-0 w-full max-w-120 bg-surface border-l border-border z-50 flex flex-col"
+            >
+              {/* Header */}
+              <div className="flex items-start justify-between px-6 py-5 border-b border-border shrink-0">
+                <div>
+                  <h2 className="text-lg font-bold text-foreground">
+                    {isEdit ? "Edit Subscription" : "Add Subscription"}
+                  </h2>
+                  <p className="text-xs text-muted mt-0.5">
+                    {isEdit
+                      ? "Update your subscription details."
+                      : "Track a new service in your vault."}
+                  </p>
+                </div>
+                <Button
+                  size="icon"
+                  variant="secondary"
+                  className="border-0 text-muted hover:text-foreground"
+                  onClick={onClose}
+                  icon={<CloseCircle size={20} color="currentColor" />}
+                />
               </div>
-              <Button
-                size="icon"
-                variant="secondary"
-                className="border-0 text-muted hover:text-foreground"
-                onClick={onClose}
-                icon={<CloseCircle size={20} color="currentColor" />}
-              />
-            </div>
 
-            {/* Scrollable body */}
-            <div className="flex-1 overflow-y-auto px-6 py-5 flex flex-col gap-7">
-              {/* ── SERVICE IDENTITY ─────────────────────────── */}
-              <section className="flex flex-col gap-4">
-                <SectionLabel>Service Identity</SectionLabel>
+              {/* Scrollable body */}
+              <div className="flex-1 overflow-y-auto px-6 py-5 flex flex-col gap-7">
+                {/* ── SERVICE IDENTITY ─────────────────────────── */}
+                <section className="flex flex-col gap-4">
+                  <SectionLabel>Service Identity</SectionLabel>
 
-                <div className="flex items-center gap-4">
-                  <div
-                    className="w-14 h-14 rounded-2xl flex items-center justify-center text-lg font-black text-foreground shrink-0"
-                    style={{ backgroundColor: icon.rgba }}
-                  >
-                    {icon.initial}
-                  </div>
-                  <div className="flex flex-col gap-0.5">
-                    <p className="text-sm font-semibold text-foreground">
-                      {form.name || "Service Name"}
-                    </p>
-                    <p className="text-[11px] text-muted">
-                      Icon auto-generated from name
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex flex-col gap-1.5">
-                  <FieldLabel>Service Name</FieldLabel>
-                  <input
-                    className={inputCls}
-                    placeholder="e.g. Netflix"
-                    value={form.name}
-                    onChange={(e) => set("name", e.target.value)}
-                  />
-                </div>
-
-                <div className="flex flex-col gap-1.5">
-                  <FieldLabel>Plan Type (optional)</FieldLabel>
-                  <input
-                    className={inputCls}
-                    placeholder="e.g. Premium, Pro, Basic"
-                    value={form.plan}
-                    onChange={(e) => set("plan", e.target.value)}
-                  />
-                </div>
-              </section>
-
-              {/* ── PRICING ──────────────────────────────────── */}
-              <section className="flex flex-col gap-4">
-                <SectionLabel>Pricing</SectionLabel>
-
-                <div className="flex items-center justify-between px-4 py-3 bg-background rounded-xl border border-border">
-                  <div>
-                    <p className="text-sm font-semibold text-foreground">
-                      Split bill
-                    </p>
-                    <p className="text-[11px] text-muted mt-0.5">
-                      Shared plan — track full cost and your share
-                    </p>
-                  </div>
-                  <Toggle
-                    enabled={form.splitBill}
-                    onChange={(v) => set("splitBill", v)}
-                  />
-                </div>
-
-                <AnimatePresence initial={false}>
-                  {form.splitBill ? (
-                    <motion.div
-                      key="split"
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: "auto" }}
-                      exit={{ opacity: 0, height: 0 }}
-                      className="overflow-hidden"
+                  <div className="flex items-center gap-4">
+                    <div
+                      className="w-14 h-14 rounded-2xl flex items-center justify-center text-lg font-black text-foreground shrink-0"
+                      style={{ backgroundColor: icon.rgba }}
                     >
-                      <div className="flex flex-col gap-3">
-                        {/* Full plan cost */}
-                        <div className="flex flex-col gap-1.5">
-                          <FieldLabel>Full plan cost</FieldLabel>
-                          <div className="relative">
-                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm text-muted pointer-events-none">
-                              {getCurrencySymbol(currencyCode)}
-                            </span>
-                            <input
-                              className={inputCls}
-                              style={{ paddingLeft: "2rem" }}
-                              type="text"
-                              inputMode="decimal"
-                              placeholder="0.00"
-                              value={form.totalAmount}
-                              onChange={(e) =>
-                                set("totalAmount", e.target.value)
-                              }
-                            />
-                          </div>
-                        </div>
+                      {icon.initial}
+                    </div>
+                    <div className="flex flex-col gap-0.5">
+                      <p className="text-sm font-semibold text-foreground">
+                        {form.name || "Service Name"}
+                      </p>
+                      <p className="text-[11px] text-muted">
+                        Icon auto-generated from name
+                      </p>
+                    </div>
+                  </div>
 
-                        {/* Split count stepper */}
-                        <div className="flex flex-col gap-1.5">
-                          <FieldLabel>Split between</FieldLabel>
-                          <div className="flex items-center gap-3">
-                            <button
-                              type="button"
-                              onClick={() =>
-                                set(
-                                  "splitCount",
-                                  String(
-                                    Math.max(2, parseInt(form.splitCount) - 1)
-                                  )
-                                )
-                              }
-                              className="w-10 h-10 rounded-xl border border-border bg-background text-foreground text-lg font-bold hover:bg-white/5 transition-colors shrink-0"
-                            >
-                              −
-                            </button>
-                            <p className="flex-1 text-center text-sm font-bold text-foreground">
-                              {form.splitCount}{" "}
-                              <span className="text-muted font-normal">
-                                people
+                  <div className="flex flex-col gap-1.5">
+                    <FieldLabel>Service Name</FieldLabel>
+                    <Input
+                      placeholder="e.g. Netflix"
+                      value={form.name}
+                      onChange={(e) => set("name", e.target.value)}
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-1.5">
+                    <FieldLabel>Plan Type (optional)</FieldLabel>
+                    <Input
+                      placeholder="e.g. Premium, Pro, Basic"
+                      value={form.plan}
+                      onChange={(e) => set("plan", e.target.value)}
+                    />
+                  </div>
+                </section>
+
+                {/* ── PRICING ──────────────────────────────────── */}
+                <section className="flex flex-col gap-4">
+                  <SectionLabel>Pricing</SectionLabel>
+
+                  <div className="flex items-center justify-between px-4 py-3 bg-background rounded-xl border border-border">
+                    <div>
+                      <p className="text-sm font-semibold text-foreground">
+                        Split bill
+                      </p>
+                      <p className="text-[11px] text-muted mt-0.5">
+                        Shared plan — track full cost and your share
+                      </p>
+                    </div>
+                    <Toggle
+                      enabled={form.splitBill}
+                      onChange={(v) => set("splitBill", v)}
+                    />
+                  </div>
+
+                  <AnimatePresence initial={false}>
+                    {form.splitBill ? (
+                      <motion.div
+                        key="split"
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: "auto" }}
+                        exit={{ opacity: 0, height: 0 }}
+                        className="overflow-hidden"
+                      >
+                        <div className="flex flex-col gap-3">
+                          {/* Full plan cost */}
+                          <div className="flex flex-col gap-1.5">
+                            <FieldLabel>Full plan cost</FieldLabel>
+                            <div className="relative">
+                              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm text-muted pointer-events-none">
+                                {getCurrencySymbol(currencyCode)}
                               </span>
-                            </p>
-                            <button
-                              type="button"
-                              onClick={() =>
-                                set(
-                                  "splitCount",
-                                  String(
-                                    Math.min(20, parseInt(form.splitCount) + 1)
+                              <Input
+                                style={{ paddingLeft: "2rem" }}
+                                type="text"
+                                inputMode="decimal"
+                                placeholder="0.00"
+                                value={form.totalAmount}
+                                onChange={(e) =>
+                                  set(
+                                    "totalAmount",
+                                    sanitizeDecimalInput(e.target.value)
                                   )
-                                )
-                              }
-                              className="w-10 h-10 rounded-xl border border-border bg-background text-foreground text-lg font-bold hover:bg-white/5 transition-colors shrink-0"
-                            >
-                              +
-                            </button>
+                                }
+                              />
+                            </div>
+                          </div>
+
+                          {/* Split count stepper */}
+                          <div className="flex flex-col gap-1.5">
+                            <FieldLabel>Split between</FieldLabel>
+                            <div className="flex items-center gap-3">
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  set(
+                                    "splitCount",
+                                    String(
+                                      Math.max(2, parseInt(form.splitCount) - 1)
+                                    )
+                                  )
+                                }
+                                className="w-10 h-10 rounded-xl border border-border bg-background text-foreground text-lg font-bold hover:bg-white/5 transition-colors shrink-0"
+                              >
+                                −
+                              </button>
+                              <p className="flex-1 text-center text-sm font-bold text-foreground">
+                                {form.splitCount}{" "}
+                                <span className="text-muted font-normal">
+                                  people
+                                </span>
+                              </p>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  set(
+                                    "splitCount",
+                                    String(
+                                      Math.min(
+                                        20,
+                                        parseInt(form.splitCount) + 1
+                                      )
+                                    )
+                                  )
+                                }
+                                className="w-10 h-10 rounded-xl border border-border bg-background text-foreground text-lg font-bold hover:bg-white/5 transition-colors shrink-0"
+                              >
+                                +
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* Your share */}
+                          <div className="flex flex-col gap-1.5">
+                            <FieldLabel>Your share</FieldLabel>
+                            <div className="relative">
+                              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm text-muted pointer-events-none">
+                                {getCurrencySymbol(currencyCode)}
+                              </span>
+                              <Input
+                                style={{ paddingLeft: "2rem" }}
+                                type="text"
+                                inputMode="decimal"
+                                placeholder="0.00"
+                                value={form.amount}
+                                onChange={(e) =>
+                                  set(
+                                    "amount",
+                                    sanitizeDecimalInput(e.target.value)
+                                  )
+                                }
+                              />
+                            </div>
                           </div>
                         </div>
-
-                        {/* Your share */}
+                      </motion.div>
+                    ) : (
+                      <motion.div
+                        key="amount"
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: "auto" }}
+                        exit={{ opacity: 0, height: 0 }}
+                        className="overflow-hidden"
+                      >
                         <div className="flex flex-col gap-1.5">
-                          <FieldLabel>Your share</FieldLabel>
+                          <FieldLabel>Amount</FieldLabel>
                           <div className="relative">
                             <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm text-muted pointer-events-none">
-                              {getCurrencySymbol(currencyCode)}
+                              {form.amountApprox
+                                ? `~${getCurrencySymbol(currencyCode)}`
+                                : getCurrencySymbol(currencyCode)}
                             </span>
-                            <input
-                              className={inputCls}
-                              style={{ paddingLeft: "2rem" }}
+                            <Input
+                              style={{
+                                paddingLeft: `${1 + (getCurrencySymbol(currencyCode).length + (form.amountApprox ? 1 : 0)) * 0.6}rem`,
+                              }}
                               type="text"
                               inputMode="decimal"
                               placeholder="0.00"
                               value={form.amount}
-                              onChange={(e) => set("amount", e.target.value)}
+                              onChange={(e) =>
+                                set(
+                                  "amount",
+                                  sanitizeDecimalInput(e.target.value)
+                                )
+                              }
                             />
                           </div>
                         </div>
-                      </div>
-                    </motion.div>
-                  ) : (
-                    <motion.div
-                      key="amount"
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: "auto" }}
-                      exit={{ opacity: 0, height: 0 }}
-                      className="overflow-hidden"
-                    >
-                      <div className="flex flex-col gap-1.5">
-                        <FieldLabel>Amount</FieldLabel>
-                        <div className="relative">
-                          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm text-muted pointer-events-none">
-                            {form.amountApprox
-                              ? `~${getCurrencySymbol(currencyCode)}`
-                              : getCurrencySymbol(currencyCode)}
-                          </span>
-                          <input
-                            className={inputCls}
-                            style={{
-                              paddingLeft: `${1 + (getCurrencySymbol(currencyCode).length + (form.amountApprox ? 1 : 0)) * 0.6}rem`,
-                            }}
-                            type="text"
-                            inputMode="decimal"
-                            placeholder="0.00"
-                            value={form.amount}
-                            onChange={(e) => set("amount", e.target.value)}
-                          />
-                        </div>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
 
-                {!form.splitBill && (
-                  <div className="flex items-center justify-between px-4 py-3 bg-background rounded-xl border border-border">
-                    <div>
-                      <p className="text-sm font-semibold text-foreground">
-                        Usage-based / approximate
-                      </p>
-                      <p className="text-[11px] text-muted mt-0.5">
-                        Shows ~ prefix to indicate variable cost
-                      </p>
+                  {!form.splitBill && (
+                    <div className="flex items-center justify-between px-4 py-3 bg-background rounded-xl border border-border">
+                      <div>
+                        <p className="text-sm font-semibold text-foreground">
+                          Usage-based / approximate
+                        </p>
+                        <p className="text-[11px] text-muted mt-0.5">
+                          Shows ~ prefix to indicate variable cost
+                        </p>
+                      </div>
+                      <Toggle
+                        enabled={form.amountApprox}
+                        onChange={(v) => set("amountApprox", v)}
+                      />
                     </div>
-                    <Toggle
-                      enabled={form.amountApprox}
-                      onChange={(v) => set("amountApprox", v)}
-                    />
-                  </div>
-                )}
-              </section>
-
-              {/* ── BILLING CYCLE ────────────────────────────── */}
-              <section className="flex flex-col gap-3">
-                <SectionLabel>Billing Cycle</SectionLabel>
-                <div className="grid grid-cols-3 gap-2">
-                  {BILLING_CYCLES.map(({ value, label }) => (
-                    <button
-                      key={value}
-                      type="button"
-                      onClick={() => set("cycle", value)}
-                      className={cn(
-                        "py-2.5 rounded-xl text-xs font-bold transition-colors",
-                        form.cycle === value
-                          ? "bg-primary text-white"
-                          : "bg-background border border-border text-muted hover:text-foreground"
-                      )}
-                    >
-                      {label}
-                    </button>
-                  ))}
-                </div>
-
-                <AnimatePresence>
-                  {form.cycle === "custom" && (
-                    <motion.div
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: "auto" }}
-                      exit={{ opacity: 0, height: 0 }}
-                      className="overflow-hidden"
-                    >
-                      <div className="relative pt-1">
-                        <select
-                          className={cn(
-                            inputCls,
-                            "appearance-none cursor-pointer pr-8"
-                          )}
-                          value={form.customInterval}
-                          onChange={(e) =>
-                            set("customInterval", e.target.value)
-                          }
-                        >
-                          {CUSTOM_INTERVALS.map(({ value, label }) => (
-                            <option key={value} value={value}>
-                              {label}
-                            </option>
-                          ))}
-                        </select>
-                        <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-muted text-xs">
-                          ▾
-                        </span>
-                      </div>
-                    </motion.div>
                   )}
-                </AnimatePresence>
-              </section>
+                </section>
 
-              {/* ── SCHEDULE ─────────────────────────────────── */}
-              <section className="flex flex-col gap-3">
-                <SectionLabel>Schedule</SectionLabel>
-                <div className="flex flex-col gap-1.5">
-                  <FieldLabel>
-                    {form.cycle === "one-off"
-                      ? "End Date"
-                      : "Next Payment Date"}
-                  </FieldLabel>
-                  <DatePicker
-                    value={form.nextPaymentDate}
-                    onChange={(v) => set("nextPaymentDate", v)}
-                  />
-                  {form.cycle === "one-off" && (
-                    <p className="text-[11px] text-muted">
-                      The date this service or license expires.
-                    </p>
-                  )}
-                </div>
-              </section>
-
-              {/* ── CATEGORY ─────────────────────────────────── */}
-              <section className="flex flex-col gap-3">
-                <SectionLabel>Category</SectionLabel>
-                <Select
-                  value={form.category}
-                  options={categoryOptions}
-                  onChange={(v) => set("category", v)}
-                />
-              </section>
-
-              {/* ── PAYMENT METHOD ───────────────────────────── */}
-              <section className="flex flex-col gap-3">
-                <SectionLabel>Payment Method</SectionLabel>
-
-                {paymentMethods === undefined ? (
-                  <div className="h-10 rounded-xl bg-background animate-pulse" />
-                ) : paymentMethods.length === 0 ? (
-                  <div className="flex items-center justify-between px-4 py-3 rounded-xl bg-background border border-border">
-                    <p className="text-sm text-muted">
-                      No payment methods saved
-                    </p>
-                    <a
-                      href="/dashboard/settings"
-                      className="flex items-center gap-1 text-xs font-bold text-primary hover:opacity-80 transition-opacity"
-                    >
-                      <Setting2 size={12} color="currentColor" />
-                      Manage
-                    </a>
+                {/* ── BILLING CYCLE ────────────────────────────── */}
+                <section className="flex flex-col gap-3">
+                  <SectionLabel>Billing Cycle</SectionLabel>
+                  <div className="grid grid-cols-3 gap-2">
+                    {BILLING_CYCLES.map(({ value, label }) => (
+                      <button
+                        key={value}
+                        type="button"
+                        onClick={() => set("cycle", value)}
+                        className={cn(
+                          "py-2.5 rounded-xl text-xs font-bold transition-colors",
+                          form.cycle === value
+                            ? "bg-primary text-white"
+                            : "bg-background border border-border text-muted hover:text-foreground"
+                        )}
+                      >
+                        {label}
+                      </button>
+                    ))}
                   </div>
-                ) : (
-                  <div className="flex flex-col gap-2">
-                    {/* None / Manual option */}
-                    <button
-                      type="button"
-                      onClick={() => set("paymentMethodId", "none")}
-                      className={cn(
-                        "flex items-center gap-3 px-4 py-3 rounded-xl border text-sm font-semibold transition-colors text-left",
-                        form.paymentMethodId === "none"
-                          ? "border-primary/60 bg-primary/10 text-foreground"
-                          : "border-border text-muted hover:text-foreground"
-                      )}
-                    >
-                      <span className="w-7 h-7 rounded-lg bg-border/50 flex items-center justify-center text-[10px] font-black text-muted shrink-0">
-                        —
-                      </span>
-                      Manual / Not specified
-                    </button>
 
-                    {paymentMethods.map((pm) => {
-                      const display =
-                        pm.type === "card" && pm.brand
-                          ? pm.last4
-                            ? `${pm.brand} ···${pm.last4}`
-                            : pm.brand
-                          : pm.label;
-                      return (
-                        <button
-                          key={pm._id}
-                          type="button"
-                          onClick={() => set("paymentMethodId", pm._id)}
-                          className={cn(
-                            "flex items-center gap-3 px-4 py-3 rounded-xl border text-sm font-semibold transition-colors text-left",
-                            form.paymentMethodId === pm._id
-                              ? "border-primary/60 bg-primary/10 text-foreground"
-                              : "border-border text-muted hover:text-foreground"
-                          )}
-                        >
-                          <span className="w-7 h-7 rounded-lg bg-border/50 flex items-center justify-center shrink-0">
-                            <PaymentMethodLogo
-                              type={pm.type}
-                              brand={pm.brand}
-                              width={24}
-                              height={15}
-                            />
-                          </span>
-                          <span className="flex-1 truncate">{display}</span>
-                          {pm.isDefault && (
-                            <span className="text-[9px] font-bold tracking-widest uppercase text-primary shrink-0">
-                              Default
-                            </span>
-                          )}
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
-
-                {/* Payment mode — hidden for one-offs */}
-                {form.cycle !== "one-off" && (
-                  <div className="flex flex-col gap-1.5 mt-1">
-                    <FieldLabel>Payment Mode</FieldLabel>
-                    <div className="grid grid-cols-2 gap-2">
-                      {(["manual", "auto"] as const).map((mode) => (
-                        <button
-                          key={mode}
-                          type="button"
-                          onClick={() => set("paymentMode", mode)}
-                          className={cn(
-                            "py-2.5 rounded-xl text-xs font-bold transition-colors",
-                            form.paymentMode === mode
-                              ? "bg-primary text-white"
-                              : "bg-background border border-border text-muted hover:text-foreground"
-                          )}
-                        >
-                          {mode === "auto" ? "Auto-Pay" : "Manual"}
-                        </button>
-                      ))}
-                    </div>
-                    <p className="text-[11px] text-muted">
-                      {form.paymentMode === "auto"
-                        ? "Renewal date auto-advances when payment is due."
-                        : "You confirm each payment manually when it's due."}
-                    </p>
-                  </div>
-                )}
-              </section>
-
-              {/* ── REMINDERS ────────────────────────────────── */}
-              <section className="flex flex-col gap-3">
-                <div className="flex items-center justify-between">
-                  <SectionLabel>Enable Reminders</SectionLabel>
-                  <Toggle
-                    enabled={form.remindersEnabled}
-                    onChange={(v) => set("remindersEnabled", v)}
-                  />
-                </div>
-
-                <AnimatePresence>
-                  {form.remindersEnabled && (
-                    <motion.div
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: "auto" }}
-                      exit={{ opacity: 0, height: 0 }}
-                      className="flex flex-col gap-3 overflow-hidden"
-                    >
-                      {/* Presets */}
-                      <div className="flex gap-2">
-                        {REMINDER_INTERVALS.map(({ value, label }) => (
-                          <button
-                            key={value}
-                            type="button"
-                            onClick={() => toggleReminderInterval(value)}
+                  <AnimatePresence>
+                    {form.cycle === "custom" && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: "auto" }}
+                        exit={{ opacity: 0, height: 0 }}
+                        className="overflow-hidden"
+                      >
+                        <div className="relative pt-1">
+                          <select
                             className={cn(
-                              "flex-1 py-2.5 rounded-xl text-xs font-bold tracking-wide transition-colors",
-                              form.reminderIntervals.includes(value)
-                                ? "bg-primary/20 text-primary border border-primary/30"
+                              "w-full bg-surface border border-border rounded-xl px-4 py-3 text-sm text-foreground placeholder:text-muted/40",
+                              "focus:outline-none focus:border-primary/50 transition-colors",
+                              "appearance-none cursor-pointer pr-8"
+                            )}
+                            value={form.customInterval}
+                            onChange={(e) =>
+                              set("customInterval", e.target.value)
+                            }
+                          >
+                            {CUSTOM_INTERVALS.map(({ value, label }) => (
+                              <option key={value} value={value}>
+                                {label}
+                              </option>
+                            ))}
+                          </select>
+                          <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-muted text-xs">
+                            ▾
+                          </span>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </section>
+
+                {/* ── SCHEDULE ─────────────────────────────────── */}
+                <section className="flex flex-col gap-3">
+                  <SectionLabel>Schedule</SectionLabel>
+                  <div className="flex flex-col gap-1.5">
+                    <FieldLabel>
+                      {form.cycle === "one-off"
+                        ? "End Date"
+                        : "Next Payment Date"}
+                    </FieldLabel>
+                    <DatePicker
+                      value={form.nextPaymentDate}
+                      onChange={(v) => set("nextPaymentDate", v)}
+                    />
+                    {form.cycle === "one-off" && (
+                      <p className="text-[11px] text-muted">
+                        The date this service or license expires.
+                      </p>
+                    )}
+                  </div>
+                </section>
+
+                {/* ── CATEGORY ─────────────────────────────────── */}
+                <section className="flex flex-col gap-3">
+                  <SectionLabel>Category</SectionLabel>
+                  <Select
+                    value={form.category}
+                    options={categoryOptions}
+                    onChange={(v) => set("category", v)}
+                  />
+                </section>
+
+                {/* ── PAYMENT METHOD ───────────────────────────── */}
+                <section className="flex flex-col gap-3">
+                  <SectionLabel>Payment Method</SectionLabel>
+
+                  {paymentMethods === undefined ? (
+                    <div className="h-10 rounded-xl bg-background animate-pulse" />
+                  ) : paymentMethods.length === 0 ? (
+                    <div className="flex items-center justify-between px-4 py-3 rounded-xl bg-background border border-border">
+                      <p className="text-sm text-muted">
+                        No payment methods saved
+                      </p>
+                      <a
+                        href="/dashboard/settings"
+                        className="flex items-center gap-1 text-xs font-bold text-primary hover:opacity-80 transition-opacity"
+                      >
+                        <Setting2 size={12} color="currentColor" />
+                        Manage
+                      </a>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col gap-2">
+                      {/* None / Manual option */}
+                      <button
+                        type="button"
+                        onClick={() => set("paymentMethodId", "none")}
+                        className={cn(
+                          "flex items-center gap-3 px-4 py-3 rounded-xl border text-sm font-semibold transition-colors text-left",
+                          form.paymentMethodId === "none"
+                            ? "border-primary/60 bg-primary/10 text-foreground"
+                            : "border-border text-muted hover:text-foreground"
+                        )}
+                      >
+                        <span className="w-7 h-7 rounded-lg bg-border/50 flex items-center justify-center text-[10px] font-black text-muted shrink-0">
+                          —
+                        </span>
+                        Manual / Not specified
+                      </button>
+
+                      {paymentMethods.map((pm) => {
+                        const display =
+                          pm.type === "card" && pm.brand
+                            ? pm.last4
+                              ? `${pm.brand} ···${pm.last4}`
+                              : pm.brand
+                            : pm.label;
+                        return (
+                          <button
+                            key={pm._id}
+                            type="button"
+                            onClick={() => set("paymentMethodId", pm._id)}
+                            className={cn(
+                              "flex items-center gap-3 px-4 py-3 rounded-xl border text-sm font-semibold transition-colors text-left",
+                              form.paymentMethodId === pm._id
+                                ? "border-primary/60 bg-primary/10 text-foreground"
+                                : "border-border text-muted hover:text-foreground"
+                            )}
+                          >
+                            <span className="w-7 h-7 rounded-lg bg-border/50 flex items-center justify-center shrink-0">
+                              <PaymentMethodLogo
+                                type={pm.type}
+                                brand={pm.brand}
+                                width={24}
+                                height={15}
+                              />
+                            </span>
+                            <span className="flex-1 truncate">{display}</span>
+                            {pm.isDefault && (
+                              <span className="text-[9px] font-bold tracking-widest uppercase text-primary shrink-0">
+                                Default
+                              </span>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {/* Payment mode — hidden for one-offs */}
+                  {form.cycle !== "one-off" && (
+                    <div className="flex flex-col gap-1.5 mt-1">
+                      <FieldLabel>Payment Mode</FieldLabel>
+                      <div className="grid grid-cols-2 gap-2">
+                        {(["manual", "auto"] as const).map((mode) => (
+                          <button
+                            key={mode}
+                            type="button"
+                            onClick={() => set("paymentMode", mode)}
+                            className={cn(
+                              "py-2.5 rounded-xl text-xs font-bold transition-colors",
+                              form.paymentMode === mode
+                                ? "bg-primary text-white"
                                 : "bg-background border border-border text-muted hover:text-foreground"
                             )}
                           >
-                            {label}
+                            {mode === "auto" ? "Auto-Pay" : "Manual"}
                           </button>
                         ))}
                       </div>
-
-                      {/* Custom chips */}
-                      {form.reminderIntervals.filter(
-                        (v) => !REMINDER_INTERVALS.find((r) => r.value === v)
-                      ).length > 0 && (
-                        <div className="flex flex-wrap gap-2">
-                          {form.reminderIntervals
-                            .filter(
-                              (v) =>
-                                !REMINDER_INTERVALS.find((r) => r.value === v)
-                            )
-                            .map((v) => {
-                              const m = v.match(/^(\d+)(d|w)$/);
-                              const label = m
-                                ? `${m[1]} ${m[2] === "w" ? "Week" : "Day"}${parseInt(m[1]) !== 1 ? "s" : ""}`
-                                : v;
-                              return (
-                                <span
-                                  key={v}
-                                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-primary/20 text-primary border border-primary/30"
-                                >
-                                  {label}
-                                  <button
-                                    type="button"
-                                    onClick={() => toggleReminderInterval(v)}
-                                    className="hover:opacity-70 transition-opacity leading-none"
-                                  >
-                                    ×
-                                  </button>
-                                </span>
-                              );
-                            })}
-                        </div>
-                      )}
-
-                      {/* Custom input */}
-                      <div className="flex gap-2">
-                        <input
-                          type="text"
-                          inputMode="numeric"
-                          placeholder="e.g. 5"
-                          value={customReminderNum}
-                          onChange={(e) =>
-                            setCustomReminderNum(
-                              e.target.value.replace(/[^0-9]/g, "")
-                            )
-                          }
-                          className={cn(inputCls, "w-20 shrink-0")}
-                        />
-                        <Select
-                          value={customReminderUnit}
-                          onChange={(v) =>
-                            setCustomReminderUnit(v as "d" | "w")
-                          }
-                          options={[
-                            { value: "d", label: "Days before" },
-                            { value: "w", label: "Weeks before" },
-                          ]}
-                          className="flex-1"
-                        />
-                        <Button
-                          type="button"
-                          onClick={() => {
-                            const n = parseInt(customReminderNum);
-                            if (!n || n < 1) return;
-                            const val = `${n}${customReminderUnit}`;
-                            if (!form.reminderIntervals.includes(val))
-                              toggleReminderInterval(val);
-                          }}
-                          className="h-full"
-                        >
-                          Add
-                        </Button>
-                      </div>
-                    </motion.div>
+                      <p className="text-[11px] text-muted">
+                        {form.paymentMode === "auto"
+                          ? "Renewal date auto-advances when payment is due."
+                          : "You confirm each payment manually when it's due."}
+                      </p>
+                    </div>
                   )}
-                </AnimatePresence>
-              </section>
+                </section>
 
-              {/* ── STATUS ───────────────────────────────────── */}
-              <section className="flex flex-col gap-3">
-                <SectionLabel>Operational Status</SectionLabel>
-                <div className="grid grid-cols-4 gap-2">
-                  {STATUS_OPTIONS.filter(
-                    ({ value }) =>
-                      form.cycle !== "one-off" || value !== "paused"
-                  ).map(({ value, label, activeClass }) => (
-                    <button
-                      key={value}
-                      type="button"
-                      onClick={() => set("status", value)}
-                      className={cn(
-                        "py-2.5 rounded-xl text-xs font-bold transition-colors",
-                        form.status === value
-                          ? activeClass
-                          : "bg-background border border-border text-muted hover:text-foreground"
-                      )}
-                    >
-                      {label}
-                    </button>
-                  ))}
-                </div>
-              </section>
+                {/* ── REMINDERS ────────────────────────────────── */}
+                <section className="flex flex-col gap-3">
+                  <div className="flex items-center justify-between">
+                    <SectionLabel>Enable Reminders</SectionLabel>
+                    <Toggle
+                      enabled={form.remindersEnabled}
+                      onChange={(v) => set("remindersEnabled", v)}
+                    />
+                  </div>
 
-              {/* ── NOTES ────────────────────────────────────── */}
-              <section className="flex flex-col gap-3">
-                <SectionLabel>Notes</SectionLabel>
-                <textarea
-                  className={cn(inputCls, "resize-none min-h-24")}
-                  placeholder="Anything worth remembering about this subscription…"
-                  value={form.notes}
-                  onChange={(e) => set("notes", e.target.value)}
-                />
-              </section>
-            </div>
+                  <AnimatePresence>
+                    {form.remindersEnabled && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: "auto" }}
+                        exit={{ opacity: 0, height: 0 }}
+                        className="flex flex-col gap-3 overflow-hidden"
+                      >
+                        {/* Presets */}
+                        <div className="flex gap-2">
+                          {REMINDER_INTERVALS.map(({ value, label }) => (
+                            <button
+                              key={value}
+                              type="button"
+                              onClick={() => toggleReminderInterval(value)}
+                              className={cn(
+                                "flex-1 py-2.5 rounded-xl text-xs font-bold tracking-wide transition-colors",
+                                form.reminderIntervals.includes(value)
+                                  ? "bg-primary/20 text-primary border border-primary/30"
+                                  : "bg-background border border-border text-muted hover:text-foreground"
+                              )}
+                            >
+                              {label}
+                            </button>
+                          ))}
+                        </div>
 
-            {/* Footer */}
-            <div className="flex items-center gap-3 px-6 py-5 border-t border-border shrink-0">
-              <Button
-                className="flex-1 rounded-xl h-12 text-sm"
-                size="lg"
-                onClick={handleSave}
-                isLoading={isSaving}
-                disabled={isSaving}
-              >
-                {isEdit ? "Update Subscription" : "Save Subscription"}
-              </Button>
-              <Button
-                variant="secondary"
-                className="rounded-xl"
-                onClick={onClose}
-              >
-                Cancel
-              </Button>
-            </div>
-          </motion.div>
-        </>
-      )}
-    </AnimatePresence>,
-    document.body
+                        {/* Custom chips */}
+                        {form.reminderIntervals.filter(
+                          (v) => !REMINDER_INTERVALS.find((r) => r.value === v)
+                        ).length > 0 && (
+                          <div className="flex flex-wrap gap-2">
+                            {form.reminderIntervals
+                              .filter(
+                                (v) =>
+                                  !REMINDER_INTERVALS.find((r) => r.value === v)
+                              )
+                              .map((v) => {
+                                const m = v.match(/^(\d+)(d|w)$/);
+                                const label = m
+                                  ? `${m[1]} ${m[2] === "w" ? "Week" : "Day"}${parseInt(m[1]) !== 1 ? "s" : ""}`
+                                  : v;
+                                return (
+                                  <span
+                                    key={v}
+                                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-primary/20 text-primary border border-primary/30"
+                                  >
+                                    {label}
+                                    <button
+                                      type="button"
+                                      onClick={() => toggleReminderInterval(v)}
+                                      className="hover:opacity-70 transition-opacity leading-none"
+                                    >
+                                      ×
+                                    </button>
+                                  </span>
+                                );
+                              })}
+                          </div>
+                        )}
+
+                        {/* Custom input */}
+                        <div className="flex gap-2">
+                          <Input
+                            type="text"
+                            inputMode="numeric"
+                            placeholder="e.g. 5"
+                            value={customReminderNum}
+                            onChange={(e) =>
+                              setCustomReminderNum(
+                                e.target.value.replace(/[^0-9]/g, "")
+                              )
+                            }
+                            className="w-20 shrink-0"
+                          />
+                          <Select
+                            value={customReminderUnit}
+                            onChange={(v) =>
+                              setCustomReminderUnit(v as "d" | "w")
+                            }
+                            options={[
+                              { value: "d", label: "Days before" },
+                              { value: "w", label: "Weeks before" },
+                            ]}
+                            className="flex-1"
+                          />
+                          <Button
+                            type="button"
+                            onClick={handleAddReminderInterval}
+                            className="h-full"
+                          >
+                            Add
+                          </Button>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </section>
+
+                {/* ── STATUS ───────────────────────────────────── */}
+                <section className="flex flex-col gap-3">
+                  <SectionLabel>Operational Status</SectionLabel>
+                  <div className="grid grid-cols-4 gap-2">
+                    {STATUS_OPTIONS.filter(
+                      ({ value }) =>
+                        form.cycle !== "one-off" || value !== "paused"
+                    ).map(({ value, label, activeClass }) => (
+                      <button
+                        key={value}
+                        type="button"
+                        onClick={() => set("status", value)}
+                        className={cn(
+                          "py-2.5 rounded-xl text-xs font-bold transition-colors",
+                          form.status === value
+                            ? activeClass
+                            : "bg-background border border-border text-muted hover:text-foreground"
+                        )}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                </section>
+
+                {/* ── NOTES ────────────────────────────────────── */}
+                <section className="flex flex-col gap-3">
+                  <SectionLabel>Notes</SectionLabel>
+                  <textarea
+                    className={cn(
+                      "w-full bg-surface border border-border rounded-xl px-4 py-3 text-sm text-foreground placeholder:text-muted/40",
+                      "focus:outline-none focus:border-primary/50 transition-colors",
+                      "resize-none min-h-24"
+                    )}
+                    placeholder="Anything worth remembering about this subscription…"
+                    value={form.notes}
+                    onChange={(e) => set("notes", e.target.value)}
+                  />
+                </section>
+              </div>
+
+              {/* Footer */}
+              <div className="flex items-center gap-3 px-6 py-5 border-t border-border shrink-0">
+                <Button
+                  className="flex-1"
+                  onClick={handleSave}
+                  isLoading={isSaving}
+                  disabled={isSaving}
+                >
+                  {isEdit ? "Update Subscription" : "Save Subscription"}
+                </Button>
+                <Button variant="secondary" onClick={onClose}>
+                  Cancel
+                </Button>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+    </ClientPortal>
   );
 }

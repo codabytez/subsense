@@ -54,13 +54,32 @@ const CURRENCIES = [
 ];
 
 const AVATAR_STYLES = [
-  "micah",
   "adventurer",
-  "lorelei",
-  "notionists",
+  "adventurer-neutral",
+  "avataaars",
+  "avataaars-neutral",
+  "big-ears",
+  "big-ears-neutral",
+  "big-smile",
+  "bottts",
+  "croodles",
+  "dylan",
   "fun-emoji",
+  "lorelei",
+  "lorelei-neutral",
+  "micah",
+  "miniavs",
+  "notionists",
+  "notionists-neutral",
+  "open-peeps",
+  "personas",
   "pixel-art",
+  "pixel-art-neutral",
+  "thumbs",
+  "toon-head",
 ];
+
+const AVATAR_PICKER_COUNT = 12;
 
 function avatarUrl(style: string, seed: string) {
   return `https://api.dicebear.com/9.x/${style}/svg?seed=${seed}`;
@@ -68,6 +87,18 @@ function avatarUrl(style: string, seed: string) {
 
 function randomSeed() {
   return Math.random().toString(36).slice(2, 10);
+}
+
+function pickRandomAvatarStyles(count: number) {
+  const shuffled = [...AVATAR_STYLES].sort(() => Math.random() - 0.5);
+  return shuffled.slice(0, count);
+}
+
+function formatAvatarStyle(style: string) {
+  return style
+    .split("-")
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
 }
 
 function currencyOption(code: string) {
@@ -267,10 +298,12 @@ export function SettingsView() {
   }
 
   function openPicker() {
-    const options = AVATAR_STYLES.map((style) => ({
-      style,
-      seed: randomSeed(),
-    }));
+    const options = pickRandomAvatarStyles(AVATAR_PICKER_COUNT).map(
+      (style) => ({
+        style,
+        seed: randomSeed(),
+      })
+    );
     setPickerOptions(options);
     setShowPicker(true);
   }
@@ -663,7 +696,7 @@ export function SettingsView() {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 8 }}
               transition={{ duration: 0.2, ease: "easeOut" }}
-              className="fixed z-50 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-surface border border-border rounded-2xl p-6 flex flex-col gap-5 w-80 shadow-2xl"
+              className="fixed z-50 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-surface border border-border rounded-2xl p-4 sm:p-6 flex flex-col gap-5 w-[calc(100vw-2rem)] max-w-[30rem] max-h-[85vh] overflow-y-auto shadow-2xl"
             >
               <div>
                 <p className="text-sm font-bold text-foreground">
@@ -673,12 +706,13 @@ export function SettingsView() {
                   Click one to set it as your profile picture
                 </p>
               </div>
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
                 {pickerOptions.map(({ style, seed }) => (
                   <button
                     key={`${style}-${seed}`}
                     onClick={() => selectAvatar(style, seed)}
                     className="relative w-full aspect-square rounded-2xl overflow-hidden bg-neutral hover:ring-2 hover:ring-primary transition-all"
+                    title={formatAvatarStyle(style)}
                   >
                     <Image
                       src={avatarUrl(style, seed)}
@@ -687,6 +721,9 @@ export function SettingsView() {
                       className="object-cover"
                       unoptimized
                     />
+                    <span className="absolute left-1.5 right-1.5 bottom-1.5 rounded-md bg-black/55 px-1.5 py-1 text-[9px] leading-none font-semibold text-white truncate">
+                      {formatAvatarStyle(style)}
+                    </span>
                   </button>
                 ))}
               </div>
