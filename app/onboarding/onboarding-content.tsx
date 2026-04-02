@@ -8,7 +8,7 @@ import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { authClient } from "@/lib/auth-client";
 import { Button } from "@/components/ui";
-import { cn } from "@/lib/utils";
+import { cn, sanitizeDecimalInput } from "@/lib/utils";
 import { DEFAULT_CATEGORIES } from "@/lib/default-categories";
 import { toast } from "sonner";
 import { Select } from "@/components/ui/select";
@@ -288,7 +288,9 @@ function StepFirstSubscription({
                 min="0"
                 step="0.01"
                 value={sub.amount}
-                onChange={(e) => updateSub({ amount: e.target.value })}
+                onChange={(e) =>
+                  updateSub({ amount: sanitizeDecimalInput(e.target.value) })
+                }
               />
             </div>
           </div>

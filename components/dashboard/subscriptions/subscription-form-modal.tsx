@@ -5,7 +5,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { CloseCircle, Setting2 } from "iconsax-reactjs";
 import { useQuery, useMutation } from "convex/react";
 import { toast } from "sonner";
-import { cn } from "@/lib/utils";
+import { cn, sanitizeDecimalInput } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectOption } from "@/components/ui/select";
@@ -282,18 +282,6 @@ export function SubscriptionFormModal({
     if (!form.reminderIntervals.includes(val)) {
       toggleReminderInterval(val);
     }
-  }
-
-  function sanitizeDecimalInput(value: string) {
-    const sanitized = value.replace(/[^\d.]/g, "");
-    const [whole = "", ...fractionParts] = sanitized.split(".");
-
-    if (fractionParts.length === 0) {
-      return whole;
-    }
-
-    const fraction = fractionParts.join("");
-    return `${whole || "0"}.${fraction}`;
   }
 
   async function handleSave() {

@@ -696,7 +696,7 @@ export function SettingsView() {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 8 }}
               transition={{ duration: 0.2, ease: "easeOut" }}
-              className="fixed z-50 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-surface border border-border rounded-2xl p-4 sm:p-6 flex flex-col gap-5 w-[calc(100vw-2rem)] max-w-[30rem] max-h-[85vh] overflow-y-auto shadow-2xl"
+              className="fixed z-50 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-surface border border-border rounded-2xl p-4 sm:p-6 flex flex-col gap-5 w-[calc(100vw-2rem)] max-w-120 max-h-[85vh] overflow-y-auto shadow-2xl"
             >
               <div>
                 <p className="text-sm font-bold text-foreground">
