@@ -63,6 +63,38 @@ export const getPaymentLogs = query({
   },
 });
 
+/** All payment logs for the current user, joined with sub info — used to keep paid subscriptions visible on the calendar (on the day they were paid) instead of disappearing once nextPaymentDate advances. */
+export const getLogsForCalendar = query({
+  args: {},
+  handler: async (ctx) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) return [];
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_email", (q) => q.eq("email", identity.email!))
+      .unique();
+    if (!user) return [];
+    const logs = await ctx.db
+      .query("paymentLogs")
+      .withIndex("by_user", (q) => q.eq("userId", user._id))
+      .collect();
+    return await Promise.all(
+      logs.map(async (log) => {
+        const sub = await ctx.db.get(log.subscriptionId);
+        return {
+          ...log,
+          subName: sub?.name ?? "Unknown",
+          subIconColor: sub?.iconColor ?? "rgba(100,100,100,0.2)",
+          cycle: sub?.cycle ?? "custom",
+          paymentMode: sub?.paymentMode ?? "manual",
+          isOneOff: sub?.cycle === "one-off",
+          notes: sub?.notes,
+        };
+      })
+    );
+  },
+});
+
 // ── Mutations ──────────────────────────────────────────────────
 
 /** Confirm a manual payment — logs it and advances nextPaymentDate */

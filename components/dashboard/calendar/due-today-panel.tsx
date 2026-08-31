@@ -90,7 +90,7 @@ export function DueTodayPanel({ events, date }: DueTodayPanelProps) {
             </motion.p>
           ) : (
             events.map((item, i) => {
-              const paid = paidIds.has(item.id);
+              const paid = paidIds.has(item.id) || !!item.paid;
               const isAuto = item.paymentMode === "auto";
               const isOneOff = item.isOneOff ?? false;
 

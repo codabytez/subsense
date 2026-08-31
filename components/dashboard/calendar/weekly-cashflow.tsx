@@ -11,6 +11,7 @@ import {
 } from "date-fns";
 import type { Doc } from "@/convex/_generated/dataModel";
 import { toDateKey } from "./calendar-grid";
+import { formatAmount } from "@/lib/currency";
 
 const CHART_H = 300;
 const LABEL_H = 28;
@@ -43,9 +44,13 @@ function toH(amount: number, max: number) {
 
 interface WeeklyCashFlowProps {
   subs: Doc<"subscriptions">[] | undefined;
+  userCurrency?: string;
 }
 
-export function WeeklyCashFlow({ subs }: WeeklyCashFlowProps) {
+export function WeeklyCashFlow({
+  subs,
+  userCurrency = "USD",
+}: WeeklyCashFlowProps) {
   const [weekOffset, setWeekOffset] = useState(0);
   const weekDays = useMemo(() => getWeekDays(weekOffset), [weekOffset]);
   const weekRangeLabel = useMemo(() => formatWeekRange(weekDays), [weekDays]);
@@ -77,6 +82,10 @@ export function WeeklyCashFlow({ subs }: WeeklyCashFlowProps) {
     ? Math.max(...days.flatMap((d) => [d.fixed, d.variable]), 0)
     : 0;
 
+  const weekTotal = days
+    ? days.reduce((sum, d) => sum + d.fixed + d.variable, 0)
+    : null;
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 16 }}
@@ -87,9 +96,23 @@ export function WeeklyCashFlow({ subs }: WeeklyCashFlowProps) {
       {/* Header */}
       <div className="flex items-start justify-between mb-8">
         <div>
-          <h2 className="text-xl font-bold text-foreground">
-            Weekly Cash Flow
-          </h2>
+          <div className="flex items-center gap-3">
+            <h2 className="text-xl font-bold text-foreground">
+              Weekly Cash Flow
+            </h2>
+            {weekTotal !== null && (
+              <span
+                className="text-xs font-mono font-bold rounded-lg px-2.5 py-1"
+                style={{
+                  backgroundColor: "rgba(124,92,252,0.12)",
+                  color: "var(--color-primary)",
+                  border: "1px solid rgba(124,92,252,0.25)",
+                }}
+              >
+                {formatAmount(weekTotal, userCurrency)} total
+              </span>
+            )}
+          </div>
           <p className="text-sm text-muted mt-0.5">
             Daily distribution of subscription costs by week
           </p>

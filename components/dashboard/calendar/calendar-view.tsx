@@ -25,8 +25,24 @@ function solidColor(rgba: string): string {
   return m ? `rgb(${m[1]},${m[2]},${m[3]})` : "#7c5cfc";
 }
 
+type PaymentLogForCalendar = {
+  _id: string;
+  subscriptionId: string;
+  amount: number;
+  currency: string;
+  date: string;
+  paymentMethodId?: string;
+  subName: string;
+  subIconColor: string;
+  cycle: string;
+  paymentMode: "auto" | "manual";
+  isOneOff?: boolean;
+  notes?: string;
+};
+
 function buildEventsMap(
-  subs: Doc<"subscriptions">[]
+  subs: Doc<"subscriptions">[],
+  logs: PaymentLogForCalendar[] | undefined
 ): Record<string, CalendarEvent[]> {
   const map: Record<string, CalendarEvent[]> = {};
   for (const sub of subs) {
@@ -54,6 +70,26 @@ function buildEventsMap(
       notes: sub.notes,
     });
   }
+  // Logged payments stay visible on the day they were paid, instead of the
+  // subscription just vanishing once nextPaymentDate advances to the next cycle.
+  for (const log of logs ?? []) {
+    const key = log.date;
+    if (!map[key]) map[key] = [];
+    map[key].push({
+      id: log.subscriptionId,
+      name: log.subName,
+      dotColor: solidColor(log.subIconColor),
+      amount: log.amount,
+      currency: log.currency,
+      cycle: log.cycle,
+      paymentMode: log.paymentMode,
+      iconColor: log.subIconColor,
+      isOneOff: log.isOneOff,
+      paymentMethodId: log.paymentMethodId,
+      notes: log.notes,
+      paid: true,
+    });
+  }
   return map;
 }
 
@@ -63,11 +99,12 @@ export function CalendarView() {
 
   const subs = useQuery(api.subscriptions.getSubscriptions);
   const user = useQuery(api.users.getCurrentUser);
+  const paymentLogs = useQuery(api.paymentLogs.getLogsForCalendar);
 
   const eventsMap = useMemo(() => {
     if (!subs) return {};
-    return buildEventsMap(subs);
-  }, [subs]);
+    return buildEventsMap(subs, paymentLogs);
+  }, [subs, paymentLogs]);
 
   const selectedEvents = useMemo((): CalendarEvent[] => {
     if (!selectedDate) return [];
@@ -128,6 +165,7 @@ export function CalendarView() {
           view={view}
           eventsMap={eventsMap}
           onDaySelect={setSelectedDate}
+          userCurrency={userCurrency}
         />
 
         <div className="flex flex-col gap-4">
@@ -137,7 +175,7 @@ export function CalendarView() {
       </div>
 
       {/* Weekly cash flow */}
-      <WeeklyCashFlow subs={subs} />
+      <WeeklyCashFlow subs={subs} userCurrency={userCurrency} />
     </FadeIn>
   );
 }

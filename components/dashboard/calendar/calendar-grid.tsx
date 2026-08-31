@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowLeft2, ArrowRight2 } from "iconsax-reactjs";
 import { cn } from "@/lib/utils";
@@ -50,6 +50,8 @@ export interface CalendarEvent {
   isOneOff?: boolean;
   paymentMethodId?: string;
   notes?: string;
+  /** True when this event represents a logged/completed payment rather than an upcoming due date. */
+  paid?: boolean;
 }
 
 /** Converts an rgb() string to rgba() with the given alpha (0–1). */
@@ -97,12 +99,14 @@ interface CalendarGridProps {
   view: CalendarView;
   eventsMap: Record<string, CalendarEvent[]>;
   onDaySelect?: (date: Date) => void;
+  userCurrency?: string;
 }
 
 export function CalendarGrid({
   view,
   eventsMap,
   onDaySelect,
+  userCurrency = "USD",
 }: CalendarGridProps) {
   const today = new Date();
   const [year, setYear] = useState(today.getFullYear());
@@ -167,10 +171,39 @@ export function CalendarGrid({
     return `${MONTH_NAMES[month]} ${year}`;
   }
 
+  // Total cost of everything landing in the visible month (due + already paid).
+  const monthTotal = useMemo(() => {
+    if (view !== "Month") return null;
+    const days = getCalendarDays(year, month);
+    let total = 0;
+    for (const item of days) {
+      if (!item.thisMonth) continue;
+      const events = eventsMap[toDateKey(year, month, item.day)] ?? [];
+      for (const e of events) total += e.amount;
+    }
+    return total;
+  }, [view, year, month, eventsMap]);
+
   return (
     <div className="bg-surface border border-border rounded-2xl overflow-hidden h-max">
       <div className="flex items-center justify-between px-6 py-5">
-        <h2 className="text-2xl font-bold text-foreground">{headerLabel()}</h2>
+        <div className="flex items-center gap-3">
+          <h2 className="text-2xl font-bold text-foreground">
+            {headerLabel()}
+          </h2>
+          {monthTotal !== null && (
+            <span
+              className="text-xs font-mono font-bold rounded-lg px-2.5 py-1"
+              style={{
+                backgroundColor: "rgba(124,92,252,0.12)",
+                color: "var(--color-primary)",
+                border: "1px solid rgba(124,92,252,0.25)",
+              }}
+            >
+              {formatAmount(monthTotal, userCurrency)} total
+            </span>
+          )}
+        </div>
         <div className="flex items-center gap-1">
           <button
             onClick={prev}
@@ -325,8 +358,10 @@ function MonthView({
                         color: e.dotColor,
                         border: `1px solid ${withAlpha(e.dotColor, 0.3)}`,
                         boxShadow: `0 1px 4px ${withAlpha(e.dotColor, 0.15)}`,
+                        opacity: e.paid ? 0.55 : 1,
                       }}
                     >
+                      {e.paid ? "✓ " : ""}
                       {e.name}
                     </span>
                   ))}
@@ -414,9 +449,13 @@ function WeekView({
                     color: e.dotColor,
                     border: `1px solid ${withAlpha(e.dotColor, 0.3)}`,
                     boxShadow: `0 2px 8px ${withAlpha(e.dotColor, 0.15)}`,
+                    opacity: e.paid ? 0.55 : 1,
                   }}
                 >
-                  <p className="uppercase tracking-widest truncate">{e.name}</p>
+                  <p className="uppercase tracking-widest truncate">
+                    {e.paid ? "✓ " : ""}
+                    {e.name}
+                  </p>
                   <p className="font-mono mt-0.5 opacity-80 truncate">
                     {formatAmount(e.amount, e.currency)}
                   </p>
@@ -522,6 +561,7 @@ function YearView({
                               backgroundColor: isToday
                                 ? "rgba(255,255,255,0.7)"
                                 : e.dotColor,
+                              opacity: e.paid ? 0.4 : 1,
                             }}
                           />
                         ))}
