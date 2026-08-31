@@ -1,12 +1,16 @@
 echo '🏗️👷 Running checks on your code before committing 🔍🧐'
 
+STAGED_FILES=$(git diff --cached --name-only -z)
+
 echo '🎨✨ Checking formatting...'
 pnpm run check-format ||
 (
     echo '🤢🤮 Your formatting is off. Running Prettier...'
     pnpm run format
-    git add .
-    echo '✨ Formatting fixed and changes staged.'
+    if [ -n "$STAGED_FILES" ]; then
+        printf '%s' "$STAGED_FILES" | xargs -0 git add --
+    fi
+    echo '✨ Formatting fixed and re-staged (only the files that were already staged).'
 )
 
 echo '🔍 Running lint-staged...'
